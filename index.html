@@ -2,23 +2,44 @@
 <html lang="en">
 
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Orbit: Solar System</title>
-    <style>
-        body {
-            margin: 0;
-            overflow: hidden;
-            background-color: #000;
-        }
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orbit: Solar System</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #000;
+      font-family: sans-serif;
+    }
 
-        canvas {
-            display: block;
-        }
+    canvas {
+      display: block;
+    }
 
-        /* Removes white scrollbar space */
-    </style>
-    <script type="importmap">
+    /* The floating label for planet names */
+    #tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.8);
+      /* Semi-transparent black */
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      pointer-events: none;
+      /* Let clicks pass through to the canvas */
+      display: none;
+      /* Hidden by default */
+      top: 0;
+      left: 0;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      white-space: nowrap;
+      z-index: 10;
+      /* Ensure it sits on top of the 3D canvas */
+    }
+  </style>
+
+  <script type="importmap">
       {
         "imports": {
           "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
@@ -29,8 +50,11 @@
 </head>
 
 <body>
-    <div id="scene-container"></div>
-    <script type="module" src="./src/main.js"></script>
+  <div id="tooltip"></div>
+
+  <div id="scene-container"></div>
+
+  <script type="module" src="./src/main.js"></script>
 </body>
 
 </html>

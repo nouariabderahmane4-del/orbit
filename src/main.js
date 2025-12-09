@@ -1,39 +1,39 @@
 import { SceneSetup } from './core/SceneSetup.js';
 import { Planet } from './entities/Planet.js';
+import { planetData } from './data/planetData.js';
+import { InputManager } from './systems/InputManager.js';
 
-// 1. Initialize Engine
 const engine = new SceneSetup('scene-container');
+const inputManager = new InputManager(engine.camera, engine.scene);
 
-// 2. Create the Solar System
-// The Sun (Center, Distance 0)
-// The Earth
-const earth = new Planet({
-    name: "Earth",
-    size: 2,
-    distance: 20,
-    speed: 0.01,
-    texture: "./public/textures/earth.jpg" // <--- Path to your image
-}, engine.scene);
+const planets = [];
 
-// The Sun
 const sun = new Planet({
     name: "Sun",
     size: 5,
     distance: 0,
     speed: 0,
-    texture: "./public/textures/sun.jpg" // <--- Path to your image
+    texture: "./public/textures/sun.jpg",
+    color: 0xFFFF00
 }, engine.scene);
 
-// 3. Animation Loop
+planets.push(sun);
+
+planetData.forEach(data => {
+    const planet = new Planet(data, engine.scene);
+    planets.push(planet);
+});
+
 function animate() {
     requestAnimationFrame(animate);
 
-    // NOW UNCOMMENT THESE:
-    sun.update();
-    earth.update();
+    planets.forEach(planet => {
+        planet.update();
+    });
+
+    inputManager.checkIntersections(planets);
 
     engine.render();
 }
-
 
 animate();
