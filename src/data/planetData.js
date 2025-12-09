@@ -24,7 +24,7 @@ export const planetData = [
         speed: 0.015,
         texture: "./public/textures/earth.jpg",
         // NEW: Cloud layer
-        clouds: "./public/textures/earth_clouds.jpg",
+        clouds: "./public/textures/earth_clouds.png",
         // NEW: Atmosphere Glow
         atmosphere: { color: 0x00aaff, opacity: 0.4 }
     },
