@@ -6,8 +6,7 @@ import { GuiManager } from './systems/GuiManager.js';
 import { StarField } from './entities/StarField.js'; // <--- 1. Import Here
 
 const engine = new SceneSetup('scene-container');
-const inputManager = new InputManager(engine.camera, engine.scene);
-
+const inputManager = new InputManager(engine.camera, engine.scene, engine.renderer);
 // --- 2. Create the Stars ---
 // We pass the scene and the number of stars we want (e.g., 5000)
 const starField = new StarField(engine.scene, 5000);
@@ -43,7 +42,10 @@ function animate() {
         planet.update(timeScale);
     });
 
-    inputManager.checkIntersections(planets);
+    // CHANGE: Replace 'checkIntersections' with 'update'
+    // This handles both the hovers AND the camera movement
+    inputManager.update(planets);
+
     engine.render();
 }
 
