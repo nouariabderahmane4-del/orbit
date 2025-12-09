@@ -12,8 +12,6 @@ export class InputManager {
 
         // 1. Setup Controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
-        this.controls.enableDamping = true;
-        this.controls.dampingFactor = 0.05;
         this.controls.enablePan = false;
 
         // Limits
@@ -24,13 +22,11 @@ export class InputManager {
         this.focusedPlanet = null;
         this.isTransitioning = false;
 
-        // --- NEW: Previous Position Tracker ---
-        // We need this to calculate the planet's movement speed per frame
+        // Tracker for planet movement
         this.previousPlanetPos = new THREE.Vector3();
 
         this.tooltip = document.getElementById('tooltip');
 
-        // 3. Listeners
         window.addEventListener('mousemove', (e) => this.onMouseMove(e));
         window.addEventListener('click', () => this.onMouseClick());
         window.addEventListener('keydown', (e) => {
@@ -56,6 +52,10 @@ export class InputManager {
         this.focusedPlanet = null;
         this.isTransitioning = true;
         this.targetCameraPos = new THREE.Vector3(0, 60, 140);
+
+        // Re-enable smooth damping for the "God View" experience
+        this.controls.enableDamping = true;
+        this.controls.dampingFactor = 0.05;
     }
 
     focusOnPlanet(planet) {
@@ -64,7 +64,6 @@ export class InputManager {
         this.focusedPlanet = planet;
         this.isTransitioning = true;
 
-        // Initialize the tracker with the planet's CURRENT position
         this.focusedPlanet.planetMesh.getWorldPosition(this.previousPlanetPos);
     }
 
@@ -90,14 +89,17 @@ export class InputManager {
             document.body.style.cursor = 'default';
         }
 
-        // --- 2. Camera Control Logic ---
+        // --- 2. Camera Logic ---
 
         if (this.focusedPlanet) {
             const currentPlanetPos = new THREE.Vector3();
             this.focusedPlanet.planetMesh.getWorldPosition(currentPlanetPos);
 
-            // A. TRANSITION (Flying there)
+            // A. TRANSITION (Flying to the planet)
             if (this.isTransitioning) {
+                // While flying, we keep damping ON for smoothness
+                this.controls.enableDamping = true;
+
                 const offset = this.focusedPlanet.data.size * 4 + 5;
                 const idealPos = new THREE.Vector3(0, offset * 0.5, offset).add(currentPlanetPos);
 
@@ -106,29 +108,31 @@ export class InputManager {
 
                 if (this.camera.position.distanceTo(idealPos) < 1.5) {
                     this.isTransitioning = false;
-                    // Sync positions perfectly when landing
                     this.previousPlanetPos.copy(currentPlanetPos);
+
+                    // --- CRITICAL FIX ---
+                    // Turn OFF damping once we arrive. 
+                    // This stops the physics engine from "sliding" the camera away 
+                    // when the planet moves. It creates a solid, mechanical lock.
+                    this.controls.enableDamping = false;
                 }
 
             } else {
-                // B. LOCKED MODE (Manual Control)
-                // --- THE FIX IS HERE ---
+                // B. LOCKED MODE (Manual Orbit)
 
-                // 1. Calculate how much the planet moved since last frame
+                // 1. Calculate Delta (How much did the planet move?)
                 const delta = new THREE.Vector3().subVectors(currentPlanetPos, this.previousPlanetPos);
 
-                // 2. Add that EXACT movement to the camera
+                // 2. Move Camera and Target by EXACTLY the same amount
                 this.camera.position.add(delta);
-
-                // 3. Add that EXACT movement to the control target (pivot point)
                 this.controls.target.add(delta);
 
-                // 4. Update tracker for the next frame
+                // 3. Update Tracker
                 this.previousPlanetPos.copy(currentPlanetPos);
             }
 
         } else {
-            // System View
+            // C. SYSTEM MODE
             this.controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.1);
             if (this.isTransitioning) {
                 this.camera.position.lerp(this.targetCameraPos, 0.05);
@@ -138,7 +142,7 @@ export class InputManager {
             }
         }
 
-        // Must be called AFTER manual updates
+        // Always update controls at the end
         this.controls.update();
     }
 
