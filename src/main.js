@@ -6,32 +6,34 @@ const engine = new SceneSetup('scene-container');
 
 // 2. Create the Solar System
 // The Sun (Center, Distance 0)
-const sun = new Planet({
-    name: "Sun",
-    color: 0xffff00, // Yellow
-    size: 5,
-    distance: 0,
-    speed: 0
-}, engine.scene);
-
-// The Earth (Distance 20)
+// The Earth
 const earth = new Planet({
     name: "Earth",
-    color: 0x0000ff, // Blue
     size: 2,
     distance: 20,
-    speed: 0.01
+    speed: 0.01,
+    texture: "./public/textures/earth.jpg" // <--- Path to your image
+}, engine.scene);
+
+// The Sun
+const sun = new Planet({
+    name: "Sun",
+    size: 5,
+    distance: 0,
+    speed: 0,
+    texture: "./public/textures/sun.jpg" // <--- Path to your image
 }, engine.scene);
 
 // 3. Animation Loop
 function animate() {
     requestAnimationFrame(animate);
 
-    // We will enable movement in the next step!
-    // sun.update();
-    // earth.update();
+    // NOW UNCOMMENT THESE:
+    sun.update();
+    earth.update();
 
     engine.render();
 }
+
 
 animate();

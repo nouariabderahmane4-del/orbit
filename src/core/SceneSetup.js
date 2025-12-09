@@ -6,35 +6,48 @@ export class SceneSetup {
 
         // 1. Create the Scene (The World)
         this.scene = new THREE.Scene();
-        this.scene.background = new THREE.Color('black'); // Space color
+        this.scene.background = new THREE.Color('black');
 
-        // 2. Create the Camera (The Eye)
-        // PerspectiveCamera(Field of View, Aspect Ratio, Near Clip, Far Clip)
+        // This call is correct, but the function definition was in the wrong place
+        this.addLights();
+
+        // 2. Create the Camera 
         this.camera = new THREE.PerspectiveCamera(
-            35, // FOV: How wide the lens is
-            window.innerWidth / window.innerHeight, // Aspect Ratio
-            0.1, // Near: Objects closer than this are invisible
-            1000 // Far: Objects further than this are invisible
+            35,
+            window.innerWidth / window.innerHeight,
+            0.1,
+            1000
         );
-        this.camera.position.set(0, 0, 100); // Move camera back so we can see center (0,0,0)
+        this.camera.position.set(0, 0, 100);
 
-        // 3. Create the Renderer (The Painter)
+        // 3. Create the Renderer 
         this.renderer = new THREE.WebGLRenderer({ antialias: true });
         this.renderer.setSize(window.innerWidth, window.innerHeight);
-        this.renderer.setPixelRatio(window.devicePixelRatio); // Sharpness on retina screens
+        this.renderer.setPixelRatio(window.devicePixelRatio);
 
-        // Append the canvas to our HTML
+        // Append the canvas
         this.container.appendChild(this.renderer.domElement);
 
-        // Auto-resize handling (Important!)
+        // Resize handling
         window.addEventListener('resize', () => {
             this.camera.aspect = window.innerWidth / window.innerHeight;
             this.camera.updateProjectionMatrix();
             this.renderer.setSize(window.innerWidth, window.innerHeight);
         });
+    } // <--- CONSTRUCTOR ENDS HERE (Pay attention to this brace)
+
+    // NEW METHOD STARTS HERE (Outside the constructor)
+    addLights() {
+        // 1. Ambient Light
+        const ambientLight = new THREE.AmbientLight(0x333333, 1);
+        this.scene.add(ambientLight);
+
+        // 2. Point Light: The Sun!
+        const sunLight = new THREE.PointLight(0xffffff, 2, 300);
+        sunLight.position.set(0, 0, 0);
+        this.scene.add(sunLight);
     }
 
-    // A helper to just "render one frame"
     render() {
         this.renderer.render(this.scene, this.camera);
     }

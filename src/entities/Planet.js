@@ -9,29 +9,44 @@ export class Planet {
         this.scene = scene;
         this.data = data;
 
-        // 1. Create the invisible container (The "Pivot" point)
-        // We will rotate this container to make the planet orbit!
         this.mesh = new THREE.Group();
 
-        // 2. Create the visible ball (The Planet itself)
+        // 1. Load the Texture
+        const textureLoader = new THREE.TextureLoader();
+        // If a texture path is provided, load it. Otherwise null.
+        const texture = data.texture ? textureLoader.load(data.texture) : null;
+
+        // 2. Create Material
+        // If it's the Sun, we want it to glow (BasicMaterial). 
+        // If it's a Planet, we want it to have shadows (StandardMaterial).
+        let material;
+        if (data.name === "Sun") {
+            material = new THREE.MeshBasicMaterial({
+                map: texture,
+                color: data.color // Fallback if texture fails
+            });
+        } else {
+            material = new THREE.MeshStandardMaterial({
+                map: texture,
+                color: data.color
+            });
+        }
+
         const geometry = new THREE.SphereGeometry(data.size, 32, 32);
-        const material = new THREE.MeshBasicMaterial({ color: data.color });
         this.planetMesh = new THREE.Mesh(geometry, material);
 
-        // 3. Position the planet mesh away from the center
-        // (This is the distance from the Sun)
         this.planetMesh.position.x = data.distance;
-
-        // 4. Add the ball to the container
         this.mesh.add(this.planetMesh);
-
-        // 5. Add the container to the actual 3D scene
         this.scene.add(this.mesh);
     }
 
     // We will use this later for animation
     update() {
-        // Rotate the container
-        // this.mesh.rotation.y += this.data.speed; 
+        // We rotate the INVISIBLE CONTAINER (the pivot point)
+        // The planet mesh itself is just sitting inside this container
+        this.mesh.rotation.y += this.data.speed;
+
+        // Optional: Rotate the planet ball itself so it looks like it has a day/night cycle
+        this.planetMesh.rotation.y += 0.005;
     }
 }
