@@ -19,17 +19,26 @@ export class InputManager {
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
         this.controls.enablePan = false;
-
         this.controls.minDistance = 2;
         this.controls.maxDistance = 500;
 
+        // 3. State
         this.focusedPlanet = null;
         this.isTransitioning = false;
-
         this.tooltip = document.getElementById('tooltip');
 
+        // --- NEW: DRAG TRACKING VARIABLES ---
+        this.dragStartX = 0;
+        this.dragStartY = 0;
+        this.dragStartTime = 0;
+
+        // 4. Listeners
         window.addEventListener('mousemove', (e) => this.onMouseMove(e));
-        window.addEventListener('click', () => this.onMouseClick());
+
+        // REPLACED 'click' with mousedown/mouseup logic
+        window.addEventListener('mousedown', (e) => this.onMouseDown(e));
+        window.addEventListener('mouseup', (e) => this.onMouseUp(e));
+
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') this.resetFocus();
         });
@@ -41,10 +50,39 @@ export class InputManager {
         this.updateTooltipPosition(event);
     }
 
-    onMouseClick() {
+    // --- NEW: START TRACKING CLICK ---
+    onMouseDown(event) {
+        this.dragStartX = event.clientX;
+        this.dragStartY = event.clientY;
+        this.dragStartTime = Date.now();
+    }
+
+    // --- NEW: END TRACKING CLICK ---
+    onMouseUp(event) {
+        // 1. Calculate how far the mouse moved
+        const distMoved = Math.sqrt(
+            Math.pow(event.clientX - this.dragStartX, 2) +
+            Math.pow(event.clientY - this.dragStartY, 2)
+        );
+
+        // 2. Calculate how long the button was held
+        const timeElapsed = Date.now() - this.dragStartTime;
+
+        // 3. DECIDE: Was this a Click or a Drag?
+        // If moved less than 5 pixels AND held for less than 300ms, it's a CLICK.
+        // Otherwise, it's a DRAG (Rotation), so we ignore it.
+        const isClick = distMoved < 5 && timeElapsed < 300;
+
+        if (isClick) {
+            this.handleActualClick();
+        }
+    }
+
+    handleActualClick() {
         if (this.hoveredPlanet) {
             this.focusOnPlanet(this.hoveredPlanet);
         } else {
+            // Only reset if we truly CLICKED empty space (not dragged)
             this.resetFocus();
         }
     }
@@ -60,7 +98,6 @@ export class InputManager {
 
         this.focusedPlanet = null;
         this.isTransitioning = true;
-
         this.targetCameraPos = new THREE.Vector3(0, 60, 140);
     }
 
@@ -75,41 +112,29 @@ export class InputManager {
         this.tooltip.style.top = event.clientY + 15 + 'px';
     }
 
-    // --- NEW HELPER FUNCTION ---
-    // If we hit a Cloud or Ring, walk up the tree to find the "Owner" planet
     findPlanetFromMesh(hitObject, planets) {
-        // Check if the object itself is a planet mesh
         let found = planets.find(p => p.planetMesh === hitObject);
         if (found) return found;
 
-        // If not, check its parent (and parent's parent)
-        // We traverse up until we hit the Scene or find a match
         let current = hitObject.parent;
         while (current) {
             found = planets.find(p => p.planetMesh === current);
             if (found) return found;
-            current = current.parent; // Keep going up
+            current = current.parent;
         }
         return null;
     }
 
     update(planets) {
-        // --- 1. Hover Logic ---
+        // Hover Logic
         this.raycaster.setFromCamera(this.mouse, this.camera);
-
         const planetMeshes = planets.map(p => p.planetMesh);
-
-        // IMPORTANT: recursive = true
-        // This means "Check the planet AND its children (clouds/rings)"
         const intersects = this.raycaster.intersectObjects(planetMeshes, true);
 
         if (intersects.length > 0) {
             const hitObject = intersects[0].object;
-
-            // USE THE NEW HELPER FUNCTION
             this.hoveredPlanet = this.findPlanetFromMesh(hitObject, planets);
 
-            // Safety check: only show if we actually found a planet
             if (this.hoveredPlanet) {
                 this.showTooltip(this.hoveredPlanet.data.name);
                 document.body.style.cursor = 'pointer';
@@ -120,13 +145,12 @@ export class InputManager {
             document.body.style.cursor = 'default';
         }
 
-        // --- 2. Camera Logic ---
+        // Camera Logic
         this.controls.update();
 
         if (this.focusedPlanet) {
             const planetPos = new THREE.Vector3();
             this.focusedPlanet.planetMesh.getWorldPosition(planetPos);
-
             this.cameraRig.position.copy(planetPos);
 
             if (this.isTransitioning) {
