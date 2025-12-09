@@ -13,7 +13,8 @@ export const planetData = [
         size: 1.5,
         distance: 15,
         speed: 0.02,
-        texture: "./public/textures/venus.jpg"
+        texture: "./public/textures/venus.jpg",
+        atmosphere: { color: 0xFFA500, opacity: 0.6 } // Venus has a thick atmosphere
     },
     {
         name: "Earth",
@@ -21,7 +22,11 @@ export const planetData = [
         size: 1.6,
         distance: 20,
         speed: 0.015,
-        texture: "./public/textures/earth.jpg"
+        texture: "./public/textures/earth.jpg",
+        // NEW: Cloud layer
+        clouds: "./public/textures/earth_clouds.jpg",
+        // NEW: Atmosphere Glow
+        atmosphere: { color: 0x00aaff, opacity: 0.4 }
     },
     {
         name: "Mars",
@@ -29,7 +34,8 @@ export const planetData = [
         size: 1.2,
         distance: 25,
         speed: 0.01,
-        texture: "./public/textures/mars.jpg"
+        texture: "./public/textures/mars.jpg",
+        atmosphere: { color: 0xff5500, opacity: 0.2 } // Thin red atmosphere
     },
     {
         name: "Jupiter",

@@ -1,11 +1,35 @@
 import * as THREE from 'three';
 
+// --- GLSL SHADERS (The Science of Atmosphere) ---
+// Vertex Shader: Calculates the normal vector for every pixel
+const atmosphereVertexShader = `
+    varying vec3 vNormal;
+    void main() {
+        vNormal = normalize(normalMatrix * normal);
+        gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    }
+`;
+
+// Fragment Shader: Calculates the "rim lighting" (Fresnel effect)
+// The closer the angle is to the edge (90 degrees), the brighter it gets.
+const atmosphereFragmentShader = `
+    varying vec3 vNormal;
+    uniform vec3 glowColor;
+    uniform float opacity;
+    uniform float intensity;
+
+    void main() {
+        float intensityCalc = pow(intensity - dot(vNormal, vec3(0, 0, 1.0)), 4.0);
+        gl_FragColor = vec4(glowColor, 1.0) * intensityCalc * opacity;
+    }
+`;
+
 export class Planet {
     constructor(data, scene) {
         this.scene = scene;
         this.data = data;
 
-        // 1. The Orbit Group (Handles movement around the Sun)
+        // 1. Root Container
         this.mesh = new THREE.Group();
 
         // 2. Texture Loading
@@ -13,7 +37,7 @@ export class Planet {
         const texture = data.texture ? textureLoader.load(data.texture) : null;
         if (texture) texture.colorSpace = THREE.SRGBColorSpace;
 
-        // 3. Material Setup
+        // 3. Create Base Planet
         let material;
         if (data.name === "Sun") {
             material = new THREE.MeshBasicMaterial({
@@ -28,66 +52,84 @@ export class Planet {
                 metalness: 0.1,
                 emissive: texture ? 0xffffff : data.color,
                 emissiveMap: texture || null,
-                emissiveIntensity: 0.15
+                emissiveIntensity: 0.1
             });
         }
 
-        // 4. Create the Planet Sphere
         const geometry = new THREE.SphereGeometry(data.size, 64, 64);
         this.planetMesh = new THREE.Mesh(geometry, material);
 
-        // --- NEW: SATURN RINGS LOGIC ---
+        // Add Base Planet to Group
+        this.planetMesh.position.x = data.distance;
+        this.mesh.add(this.planetMesh);
+
+        // --- NEW: CLOUD LAYER ---
+        if (data.clouds) {
+            const cloudTexture = textureLoader.load(data.clouds);
+            cloudTexture.colorSpace = THREE.SRGBColorSpace;
+
+            const cloudGeometry = new THREE.SphereGeometry(data.size * 1.02, 64, 64); // 1.02x larger
+            const cloudMaterial = new THREE.MeshStandardMaterial({
+                map: cloudTexture,
+                transparent: true,
+                opacity: 0.8,
+                blending: THREE.AdditiveBlending, // Makes black parts invisible
+                side: THREE.DoubleSide
+            });
+
+            this.cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
+            this.planetMesh.add(this.cloudMesh); // Add clouds to the planet mesh
+        }
+
+        // --- NEW: ATMOSPHERE GLOW ---
+        if (data.atmosphere) {
+            const atmosGeometry = new THREE.SphereGeometry(data.size * 1.2, 64, 64); // 1.2x larger
+
+            const atmosMaterial = new THREE.ShaderMaterial({
+                vertexShader: atmosphereVertexShader,
+                fragmentShader: atmosphereFragmentShader,
+                blending: THREE.AdditiveBlending,
+                side: THREE.BackSide, // Render on the back to create a halo effect
+                transparent: true,
+                uniforms: {
+                    glowColor: { value: new THREE.Color(data.atmosphere.color) },
+                    opacity: { value: data.atmosphere.opacity },
+                    intensity: { value: 0.7 }
+                }
+            });
+
+            this.atmosphereMesh = new THREE.Mesh(atmosGeometry, atmosMaterial);
+            this.planetMesh.add(this.atmosphereMesh);
+        }
+
+        // --- SATURN RINGS ---
         if (data.name === "Saturn") {
-            // A. Geometry: Inner Radius (Just above surface), Outer Radius (Wide)
             const innerRadius = data.size * 1.4;
             const outerRadius = data.size * 2.4;
             const ringGeometry = new THREE.RingGeometry(innerRadius, outerRadius, 64);
-
-            // B. Texture/Material
-            // We use a simple color for now, but slightly transparent
             const ringMaterial = new THREE.MeshStandardMaterial({
-                color: 0xcdc2b0, // Beige/Sand color
-                side: THREE.DoubleSide, // CRITICAL: Visible from top and bottom
+                color: 0xcdc2b0,
+                side: THREE.DoubleSide,
                 transparent: true,
                 opacity: 0.6,
-                roughness: 1, // Rings are dusty, not shiny
+                roughness: 1,
             });
-
             const ringMesh = new THREE.Mesh(ringGeometry, ringMaterial);
-
-            // C. Orientation Fix
-            // Rings are created standing up (facing Z). Rotate -90 deg to lay flat.
             ringMesh.rotation.x = -Math.PI / 2;
-
-            // D. Shadows (Optional but nice)
             ringMesh.receiveShadow = true;
             ringMesh.castShadow = true;
-
-            // E. Attach to Planet
             this.planetMesh.add(ringMesh);
-
-            // F. THE ICONIC TILT
-            // Saturn is tilted ~27 degrees relative to its orbit.
-            // We rotate the PLANET MESH, and the child Ring moves with it.
-            this.planetMesh.rotation.z = 27 * (Math.PI / 180); // Convert degrees to radians
+            this.planetMesh.rotation.z = 27 * (Math.PI / 180);
         }
-        // -------------------------------
 
-        // Position the planet relative to the sun
-        this.planetMesh.position.x = data.distance;
-        this.mesh.add(this.planetMesh);
         this.scene.add(this.mesh);
 
-        // 5. Draw the Orbit Line (Visual Path)
+        // Orbit Line
         this.createOrbitLine(data.distance);
     }
 
     createOrbitLine(radius) {
-        const orbitShape = new THREE.EllipseCurve(
-            0, 0,
-            radius, radius,
-            0, 2 * Math.PI
-        );
+        const orbitShape = new THREE.EllipseCurve(0, 0, radius, radius, 0, 2 * Math.PI);
         const points = orbitShape.getPoints(128);
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
         const material = new THREE.LineBasicMaterial({
@@ -101,11 +143,15 @@ export class Planet {
     }
 
     update(timeScale = 1) {
-        // Orbit around the sun
+        // Orbit
         this.mesh.rotation.y += this.data.speed * timeScale;
 
-        // Spin on its own axis
-        // Note: Because we tilted Saturn, this rotation happens on its local axis!
+        // Planet Spin
         this.planetMesh.rotation.y += 0.005 * timeScale;
+
+        // Clouds Spin (Slightly faster than planet for parallax effect)
+        if (this.cloudMesh) {
+            this.cloudMesh.rotation.y += 0.002 * timeScale;
+        }
     }
 }
