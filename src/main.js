@@ -2,10 +2,15 @@ import { SceneSetup } from './core/SceneSetup.js';
 import { Planet } from './entities/Planet.js';
 import { planetData } from './data/planetData.js';
 import { InputManager } from './systems/InputManager.js';
-import { GuiManager } from './systems/GuiManager.js'; // <--- Import this
+import { GuiManager } from './systems/GuiManager.js';
+import { StarField } from './entities/StarField.js'; // <--- 1. Import Here
 
 const engine = new SceneSetup('scene-container');
 const inputManager = new InputManager(engine.camera, engine.scene);
+
+// --- 2. Create the Stars ---
+// We pass the scene and the number of stars we want (e.g., 5000)
+const starField = new StarField(engine.scene, 5000);
 
 const planets = [];
 
@@ -27,16 +32,14 @@ planetData.forEach(data => {
 });
 
 // Initialize GUI
-const guiManager = new GuiManager(planets); // <--- Start the GUI
+const guiManager = new GuiManager(planets);
 
 function animate() {
     requestAnimationFrame(animate);
 
-    // Get the global speed multiplier
     const timeScale = guiManager.params.timeScale;
 
     planets.forEach(planet => {
-        // Pass the timeScale to the update method
         planet.update(timeScale);
     });
 

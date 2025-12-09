@@ -5,7 +5,7 @@ export const planetData = [
         size: 0.8,
         distance: 10,
         speed: 0.04,
-        texture: null
+        texture: "./public/textures/mercury.jpg"
     },
     {
         name: "Venus",
@@ -13,7 +13,7 @@ export const planetData = [
         size: 1.5,
         distance: 15,
         speed: 0.02,
-        texture: null
+        texture: "./public/textures/venus.jpg"
     },
     {
         name: "Earth",
@@ -29,7 +29,7 @@ export const planetData = [
         size: 1.2,
         distance: 25,
         speed: 0.01,
-        texture: null
+        texture: "./public/textures/mars.jpg"
     },
     {
         name: "Jupiter",
@@ -37,7 +37,7 @@ export const planetData = [
         size: 3.5,
         distance: 35,
         speed: 0.005,
-        texture: null
+        texture: "./public/textures/jupiter.jpg"
     },
     {
         name: "Saturn",
@@ -45,7 +45,7 @@ export const planetData = [
         size: 3.0,
         distance: 45,
         speed: 0.003,
-        texture: null
+        texture: "./public/textures/saturn.jpg"
     },
     {
         name: "Uranus",
@@ -53,7 +53,7 @@ export const planetData = [
         size: 2.0,
         distance: 55,
         speed: 0.002,
-        texture: null
+        texture: "./public/textures/uranus.jpg"
     },
     {
         name: "Neptune",
@@ -61,6 +61,6 @@ export const planetData = [
         size: 2.0,
         distance: 65,
         speed: 0.001,
-        texture: null
+        texture: "./public/textures/neptune.jpg"
     }
 ];
