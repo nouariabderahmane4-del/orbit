@@ -10,7 +10,7 @@ export class InputManager {
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
 
-        // 1. Create the "Rig" (An invisible container for the camera)
+        // 1. Create the Rig
         this.cameraRig = new THREE.Object3D();
         this.scene.add(this.cameraRig);
 
@@ -20,7 +20,6 @@ export class InputManager {
         this.controls.dampingFactor = 0.05;
         this.controls.enablePan = false;
 
-        // Limits
         this.controls.minDistance = 2;
         this.controls.maxDistance = 500;
 
@@ -51,13 +50,10 @@ export class InputManager {
     }
 
     resetFocus() {
-        if (!this.focusedPlanet) return; // Already reset
+        if (!this.focusedPlanet) return;
 
-        // 1. Detach Camera from Rig (Put it back in the World)
-        // .attach() automatically calculates the new world position/rotation
         this.scene.attach(this.camera);
 
-        // 2. Set the controls target to where the planet IS (World Space)
         const planetWorldPos = new THREE.Vector3();
         this.focusedPlanet.planetMesh.getWorldPosition(planetWorldPos);
         this.controls.target.copy(planetWorldPos);
@@ -65,7 +61,6 @@ export class InputManager {
         this.focusedPlanet = null;
         this.isTransitioning = true;
 
-        // Target "God View"
         this.targetCameraPos = new THREE.Vector3(0, 60, 140);
     }
 
@@ -80,17 +75,45 @@ export class InputManager {
         this.tooltip.style.top = event.clientY + 15 + 'px';
     }
 
+    // --- NEW HELPER FUNCTION ---
+    // If we hit a Cloud or Ring, walk up the tree to find the "Owner" planet
+    findPlanetFromMesh(hitObject, planets) {
+        // Check if the object itself is a planet mesh
+        let found = planets.find(p => p.planetMesh === hitObject);
+        if (found) return found;
+
+        // If not, check its parent (and parent's parent)
+        // We traverse up until we hit the Scene or find a match
+        let current = hitObject.parent;
+        while (current) {
+            found = planets.find(p => p.planetMesh === current);
+            if (found) return found;
+            current = current.parent; // Keep going up
+        }
+        return null;
+    }
+
     update(planets) {
         // --- 1. Hover Logic ---
         this.raycaster.setFromCamera(this.mouse, this.camera);
+
         const planetMeshes = planets.map(p => p.planetMesh);
-        const intersects = this.raycaster.intersectObjects(planetMeshes);
+
+        // IMPORTANT: recursive = true
+        // This means "Check the planet AND its children (clouds/rings)"
+        const intersects = this.raycaster.intersectObjects(planetMeshes, true);
 
         if (intersects.length > 0) {
             const hitObject = intersects[0].object;
-            this.hoveredPlanet = planets.find(p => p.planetMesh === hitObject);
-            this.showTooltip(this.hoveredPlanet.data.name);
-            document.body.style.cursor = 'pointer';
+
+            // USE THE NEW HELPER FUNCTION
+            this.hoveredPlanet = this.findPlanetFromMesh(hitObject, planets);
+
+            // Safety check: only show if we actually found a planet
+            if (this.hoveredPlanet) {
+                this.showTooltip(this.hoveredPlanet.data.name);
+                document.body.style.cursor = 'pointer';
+            }
         } else {
             this.hoveredPlanet = null;
             this.hideTooltip();
@@ -104,47 +127,24 @@ export class InputManager {
             const planetPos = new THREE.Vector3();
             this.focusedPlanet.planetMesh.getWorldPosition(planetPos);
 
-            // A. Move the Rig to the Planet
             this.cameraRig.position.copy(planetPos);
 
             if (this.isTransitioning) {
-                // FLYING MODE
-                // While flying, the camera is still in World Space
                 const offset = this.focusedPlanet.data.size * 4 + 5;
                 const idealPos = new THREE.Vector3(0, offset * 0.5, offset).add(planetPos);
 
                 this.camera.position.lerp(idealPos, 0.05);
                 this.controls.target.lerp(planetPos, 0.1);
 
-                // Arrival Check
                 if (this.camera.position.distanceTo(idealPos) < 1.0) {
                     this.isTransitioning = false;
-
-                    // --- THE FIX: PARENTING ---
-                    // 1. Move the Rig exactly to the planet (Double check)
                     this.cameraRig.position.copy(planetPos);
-
-                    // 2. Put the Camera INSIDE the Rig
-                    // .attach() keeps the camera visually in the same place, 
-                    // but changes its parent to the Rig.
                     this.cameraRig.attach(this.camera);
-
-                    // 3. Set OrbitControls to orbit the center of the Rig (0,0,0)
-                    // Since the Rig is at the planet, we are now orbiting the planet.
                     this.controls.target.set(0, 0, 0);
-
-                    // 4. Clear internal inertia so it doesn't jump
                     this.controls.saveState();
                 }
             }
-            // B. LOCKED MODE
-            // We do NOTHING here!
-            // Since the Camera is a child of the Rig, and we move the Rig 
-            // at the start of the function, the camera moves automatically.
-            // OrbitControls handles the rotation around the Rig center.
-
         } else {
-            // C. SYSTEM MODE
             this.controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.1);
 
             if (this.isTransitioning) {
