@@ -27,18 +27,15 @@ export class InputManager {
         this.isTransitioning = false;
         this.tooltip = document.getElementById('tooltip');
 
-        // --- NEW: DRAG TRACKING VARIABLES ---
+        // Drag Tracking
         this.dragStartX = 0;
         this.dragStartY = 0;
         this.dragStartTime = 0;
 
         // 4. Listeners
         window.addEventListener('mousemove', (e) => this.onMouseMove(e));
-
-        // REPLACED 'click' with mousedown/mouseup logic
         window.addEventListener('mousedown', (e) => this.onMouseDown(e));
         window.addEventListener('mouseup', (e) => this.onMouseUp(e));
-
         window.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') this.resetFocus();
         });
@@ -50,27 +47,21 @@ export class InputManager {
         this.updateTooltipPosition(event);
     }
 
-    // --- NEW: START TRACKING CLICK ---
     onMouseDown(event) {
         this.dragStartX = event.clientX;
         this.dragStartY = event.clientY;
         this.dragStartTime = Date.now();
     }
 
-    // --- NEW: END TRACKING CLICK ---
     onMouseUp(event) {
-        // 1. Calculate how far the mouse moved
+        // Calculate drag distance
         const distMoved = Math.sqrt(
             Math.pow(event.clientX - this.dragStartX, 2) +
             Math.pow(event.clientY - this.dragStartY, 2)
         );
-
-        // 2. Calculate how long the button was held
         const timeElapsed = Date.now() - this.dragStartTime;
 
-        // 3. DECIDE: Was this a Click or a Drag?
-        // If moved less than 5 pixels AND held for less than 300ms, it's a CLICK.
-        // Otherwise, it's a DRAG (Rotation), so we ignore it.
+        // If moved < 5px and held < 300ms, it's a CLICK
         const isClick = distMoved < 5 && timeElapsed < 300;
 
         if (isClick) {
@@ -82,7 +73,7 @@ export class InputManager {
         if (this.hoveredPlanet) {
             this.focusOnPlanet(this.hoveredPlanet);
         } else {
-            // Only reset if we truly CLICKED empty space (not dragged)
+            // Only reset if we truly clicked empty space
             this.resetFocus();
         }
     }
@@ -90,6 +81,7 @@ export class InputManager {
     resetFocus() {
         if (!this.focusedPlanet) return;
 
+        // Detach and Reset
         this.scene.attach(this.camera);
 
         const planetWorldPos = new THREE.Vector3();
@@ -113,9 +105,11 @@ export class InputManager {
     }
 
     findPlanetFromMesh(hitObject, planets) {
+        // Direct Hit?
         let found = planets.find(p => p.planetMesh === hitObject);
         if (found) return found;
 
+        // Child Hit (Clouds/Atmosphere/Rings)? Walk up tree.
         let current = hitObject.parent;
         while (current) {
             found = planets.find(p => p.planetMesh === current);
@@ -126,9 +120,14 @@ export class InputManager {
     }
 
     update(planets) {
-        // Hover Logic
+        // --- 1. PREPARE RAYCASTER ---
+        // CRITICAL FIX: Force update the camera matrix so raycasting is accurate
+        this.camera.updateMatrixWorld();
         this.raycaster.setFromCamera(this.mouse, this.camera);
+
         const planetMeshes = planets.map(p => p.planetMesh);
+
+        // Recursive = true to hit clouds/rings/atmosphere
         const intersects = this.raycaster.intersectObjects(planetMeshes, true);
 
         if (intersects.length > 0) {
@@ -145,12 +144,14 @@ export class InputManager {
             document.body.style.cursor = 'default';
         }
 
-        // Camera Logic
+        // --- 2. UPDATE CONTROLS & CAMERA ---
         this.controls.update();
 
         if (this.focusedPlanet) {
             const planetPos = new THREE.Vector3();
             this.focusedPlanet.planetMesh.getWorldPosition(planetPos);
+
+            // Move Rig to Planet
             this.cameraRig.position.copy(planetPos);
 
             if (this.isTransitioning) {
@@ -162,9 +163,11 @@ export class InputManager {
 
                 if (this.camera.position.distanceTo(idealPos) < 1.0) {
                     this.isTransitioning = false;
+
+                    // LOCK ON: Parent Camera to Rig
                     this.cameraRig.position.copy(planetPos);
                     this.cameraRig.attach(this.camera);
-                    this.controls.target.set(0, 0, 0);
+                    this.controls.target.set(0, 0, 0); // Target center of Rig
                     this.controls.saveState();
                 }
             }
