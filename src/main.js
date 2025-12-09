@@ -17,7 +17,7 @@ const planets = [];
 // Create Sun
 const sun = new Planet({
     name: "Sun",
-    size: 5,
+    size: 6.6825,
     distance: 0,
     speed: 0,
     texture: "./public/textures/sun.jpg",
