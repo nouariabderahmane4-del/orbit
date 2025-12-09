@@ -39,7 +39,7 @@ export class SceneSetup {
     // NEW METHOD STARTS HERE (Outside the constructor)
     addLights() {
         // 1. Ambient Light
-        const ambientLight = new THREE.AmbientLight(0x333333, 1);
+        const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
         this.scene.add(ambientLight);
 
         // 2. Point Light: The Sun!
