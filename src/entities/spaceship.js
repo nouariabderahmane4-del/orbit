@@ -5,87 +5,184 @@ export class Spaceship {
         this.scene = scene;
         this.camera = camera;
 
-        // --- 1. PHYSICS STATE ---
-        this.position = new THREE.Vector3(0, 50, 100); // Start near Earth
+        // Physics State
+        this.position = new THREE.Vector3(0, 50, 100);
         this.velocity = new THREE.Vector3(0, 0, 0);
 
-        // Settings: Adjusted for better control
-        this.maxSpeed = 2.0;      // Cap the maximum speed
-        this.acceleration = 0.05; // How fast we speed up (W)
-        this.turnSpeed = 0.04;    // How fast we turn
-        this.friction = 0.95;     // Higher drag = easier to stop (0.95 is "thicker" space)
+        // Default Stats (Explorer)
+        this.maxSpeed = 2.0;
+        this.acceleration = 0.05;
+        this.turnSpeed = 0.04;
+        this.friction = 0.95;
 
-        // --- 2. BUILD THE VISUAL SHIP ---
-        this.mesh = this.createShipMesh();
-        this.mesh.position.copy(this.position);
+        // Visuals
+        this.currentType = 1; // 0=Interceptor, 1=Explorer, 2=Hauler
+        this.mesh = new THREE.Group();
         this.scene.add(this.mesh);
 
-        // --- 3. INPUT STATE ---
-        this.keys = {
-            thrust: false,
-            brake: false,
-            yawLeft: false,
-            yawRight: false,
-            pitchUp: false,
-            pitchDown: false
-        };
+        // Build Initial Ship
+        this.setShipType(1);
 
-        // Bind Input Listeners
+        // Input
+        this.keys = { thrust: false, brake: false, yawLeft: false, yawRight: false, pitchUp: false, pitchDown: false };
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
     }
 
-    createShipMesh() {
-        const shipGroup = new THREE.Group();
+    setShipType(typeIndex) {
+        this.currentType = typeIndex;
 
-        // A. Main Body (Cone)
-        const bodyGeo = new THREE.ConeGeometry(2, 8, 8);
-        bodyGeo.rotateX(Math.PI / 2); // Point forward (Z-axis)
-        const bodyMat = new THREE.MeshStandardMaterial({
-            color: 0x00aaff,
-            roughness: 0.4,
-            metalness: 0.8
-        });
-        const body = new THREE.Mesh(bodyGeo, bodyMat);
-        shipGroup.add(body);
+        // 1. Clear old mesh
+        while (this.mesh.children.length > 0) {
+            this.mesh.remove(this.mesh.children[0]);
+        }
 
-        // B. Wings (Triangles)
-        const wingGeo = new THREE.BufferGeometry();
-        const wingVertices = new Float32Array([
-            0, 0, 2,   // Tip
-            6, 0, -3,  // Far Right (Wider for cool look)
-            0, 0, -3   // Back Center
-        ]);
-        wingGeo.setAttribute('position', new THREE.BufferAttribute(wingVertices, 3));
-        const wingMat = new THREE.MeshStandardMaterial({
-            color: 0x333333,
-            side: THREE.DoubleSide
-        });
+        // 2. Build new mesh & Set Stats
+        let shipGeo;
 
-        const rightWing = new THREE.Mesh(wingGeo, wingMat);
-        const leftWing = rightWing.clone();
-        leftWing.scale.x = -1; // Mirror it
+        if (typeIndex === 0) {
+            // --- TYPE 0: INTERCEPTOR (Fast, Red) ---
+            this.maxSpeed = 3.5;
+            this.acceleration = 0.08;
+            this.turnSpeed = 0.06;
+            this.friction = 0.92; // Drifts more
+            shipGeo = this.buildInterceptor();
+        } else if (typeIndex === 2) {
+            // --- TYPE 2: HAULER (Slow, Yellow) ---
+            this.maxSpeed = 1.2;
+            this.acceleration = 0.02;
+            this.turnSpeed = 0.02;
+            this.friction = 0.98; // Stops fast
+            shipGeo = this.buildHauler();
+        } else {
+            // --- TYPE 1: EXPLORER (Balanced, Blue) ---
+            this.maxSpeed = 2.0;
+            this.acceleration = 0.05;
+            this.turnSpeed = 0.04;
+            this.friction = 0.95;
+            shipGeo = this.buildExplorer();
+        }
 
-        shipGroup.add(rightWing);
-        shipGroup.add(leftWing);
+        this.mesh.add(shipGeo);
 
-        // C. Engine Glow
-        const engineGeo = new THREE.CylinderGeometry(0.5, 0, 2, 8);
-        engineGeo.rotateX(Math.PI / 2);
-        const engineMat = new THREE.MeshBasicMaterial({ color: 0xff4400 });
-        const engine = new THREE.Mesh(engineGeo, engineMat);
-        engine.position.z = -4.5;
-        shipGroup.add(engine);
+        // Reset rotation but keep position
+        this.mesh.rotation.set(0, 0, 0);
+    }
 
-        return shipGroup;
+    // --- SHIP BUILDERS ---
+
+    buildInterceptor() {
+        const group = new THREE.Group();
+
+        // Body
+        const body = new THREE.Mesh(
+            new THREE.ConeGeometry(1.5, 10, 4), // Sharp 4-sided
+            new THREE.MeshStandardMaterial({ color: 0xff3333, roughness: 0.2, metalness: 0.8 })
+        );
+        body.rotation.x = Math.PI / 2;
+        body.rotation.y = Math.PI / 4; // Diamond shape
+        group.add(body);
+
+        // Wings (Swept back)
+        const wingGeo = new THREE.BoxGeometry(8, 0.2, 3);
+        const wings = new THREE.Mesh(wingGeo, new THREE.MeshStandardMaterial({ color: 0xaa0000 }));
+        wings.position.z = 2;
+        group.add(wings);
+
+        // Pilot (Red Helmet)
+        const pilot = this.createPilot(0xff0000);
+        pilot.position.set(0, 0.5, -1);
+        group.add(pilot);
+
+        return group;
+    }
+
+    buildExplorer() {
+        const group = new THREE.Group();
+
+        // Body (Cylinder)
+        const body = new THREE.Mesh(
+            new THREE.CylinderGeometry(1.5, 1, 8, 8),
+            new THREE.MeshStandardMaterial({ color: 0x00aaff, roughness: 0.4 })
+        );
+        body.rotation.x = Math.PI / 2;
+        group.add(body);
+
+        // Wings (Flat)
+        const wing = new THREE.Mesh(
+            new THREE.BoxGeometry(7, 0.3, 2),
+            new THREE.MeshStandardMaterial({ color: 0xffffff })
+        );
+        group.add(wing);
+
+        // Cockpit Glass
+        const cockpit = new THREE.Mesh(
+            new THREE.SphereGeometry(1.4, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
+            new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0 })
+        );
+        cockpit.rotation.x = -Math.PI / 2;
+        cockpit.position.z = -1;
+        group.add(cockpit);
+
+        // Pilot (White Helmet)
+        const pilot = this.createPilot(0xffffff);
+        pilot.position.set(0, 0.5, -1);
+        group.add(pilot);
+
+        return group;
+    }
+
+    buildHauler() {
+        const group = new THREE.Group();
+
+        // Body (Boxy)
+        const body = new THREE.Mesh(
+            new THREE.BoxGeometry(3, 3, 6),
+            new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.8 })
+        );
+        group.add(body);
+
+        // Cargo Containers
+        const cargo = new THREE.Mesh(
+            new THREE.BoxGeometry(4, 2, 2),
+            new THREE.MeshStandardMaterial({ color: 0x333333 })
+        );
+        cargo.position.set(0, 0, 2);
+        group.add(cargo);
+
+        // Pilot (Grey Helmet)
+        const pilot = this.createPilot(0x555555);
+        pilot.position.set(0, 0.8, -2);
+        group.add(pilot);
+
+        return group;
+    }
+
+    createPilot(color) {
+        const pilotGroup = new THREE.Group();
+
+        // Head
+        const head = new THREE.Mesh(
+            new THREE.SphereGeometry(0.4, 8, 8),
+            new THREE.MeshStandardMaterial({ color: color })
+        );
+        pilotGroup.add(head);
+
+        // Shoulders
+        const body = new THREE.Mesh(
+            new THREE.BoxGeometry(0.8, 0.6, 0.4),
+            new THREE.MeshStandardMaterial({ color: 0x222222 })
+        );
+        body.position.y = -0.5;
+        pilotGroup.add(body);
+
+        return pilotGroup;
     }
 
     onKeyDown(event) {
-        // Prevent browser scrolling when using Arrows or Space
         if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(event.code) > -1) {
             event.preventDefault();
         }
-
         switch (event.code) {
             case 'KeyW': this.keys.thrust = true; break;
             case 'KeyS': this.keys.brake = true; break;
@@ -108,18 +205,13 @@ export class Spaceship {
     }
 
     update() {
-        // 1. ROTATION (Direct Control)
-        // Arrow Left/Right = Yaw (Turn)
+        // Rotation
         if (this.keys.yawLeft) this.mesh.rotation.y += this.turnSpeed;
         if (this.keys.yawRight) this.mesh.rotation.y -= this.turnSpeed;
-
-        // Arrow Up/Down = Pitch (Nose Up/Down)
-        // Note: Usually "Up" means nose up, which is negative X rotation in 3D space
         if (this.keys.pitchUp) this.mesh.rotation.x -= this.turnSpeed;
         if (this.keys.pitchDown) this.mesh.rotation.x += this.turnSpeed;
 
-        // 2. THRUST (Newton's 2nd Law)
-        // Get the direction the ship is currently facing
+        // Thrust
         const forwardDir = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
 
         if (this.keys.thrust) {
@@ -129,27 +221,15 @@ export class Spaceship {
             this.velocity.sub(forwardDir.multiplyScalar(this.acceleration * 0.5));
         }
 
-        // Limit Speed (Safety Cap)
         this.velocity.clampLength(0, this.maxSpeed);
-
-        // 3. APPLY VELOCITY
         this.position.add(this.velocity);
         this.mesh.position.copy(this.position);
-
-        // 4. FRICTION (Drag)
         this.velocity.multiplyScalar(this.friction);
 
-        // 5. CAMERA CHASE (Third Person View)
-        // Calculate where the camera should be (Behind and Up)
+        // Camera Chase
         const relativeCameraOffset = new THREE.Vector3(0, 8, -25);
-
-        // Convert to World Coordinates
         const cameraOffset = relativeCameraOffset.applyMatrix4(this.mesh.matrixWorld);
-
-        // Smoothly fly camera to that spot
         this.camera.position.lerp(cameraOffset, 0.1);
-
-        // Always look at the ship
         this.camera.lookAt(this.mesh.position);
     }
 }
