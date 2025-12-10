@@ -10,7 +10,7 @@ export class InputManager {
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
 
-        // 1. Create the Rig
+        // 1. Create the Rig (We keep this for potential future use, but won't parent the camera to it)
         this.cameraRig = new THREE.Object3D();
         this.scene.add(this.cameraRig);
 
@@ -71,7 +71,6 @@ export class InputManager {
         }
     }
 
-    // --- THE FIX: We removed the 'else' block that reset the camera ---
     handleActualClick() {
         // 1. Force the camera to be mathematically accurate right now
         this.camera.updateMatrixWorld();
@@ -94,23 +93,25 @@ export class InputManager {
                 this.focusOnPlanet(targetPlanet);
             }
         }
-        // FIX APPLIED HERE:
-        // Previous logic had an 'else { resetFocus() }' here.
-        // It is now removed so clicking background does nothing but allow rotation.
+        // Note: No 'else' block here. Clicking empty space does nothing.
     }
 
     resetFocus() {
         if (!this.focusedPlanet) return;
 
-        // Detach and Reset
+        // Ensure camera is attached to scene (Safety check)
         this.scene.attach(this.camera);
 
         const planetWorldPos = new THREE.Vector3();
         this.focusedPlanet.planetMesh.getWorldPosition(planetWorldPos);
+
+        // When we reset, we start looking from where the planet WAS
         this.controls.target.copy(planetWorldPos);
 
         this.focusedPlanet = null;
         this.isTransitioning = true;
+
+        // Target position: Back to looking at the whole system
         this.targetCameraPos = new THREE.Vector3(0, 60, 140);
     }
 
@@ -172,27 +173,34 @@ export class InputManager {
             const planetPos = new THREE.Vector3();
             this.focusedPlanet.planetMesh.getWorldPosition(planetPos);
 
-            // Move Rig to Planet
-            this.cameraRig.position.copy(planetPos);
+            // FIX: We no longer attach the camera to the rig.
+            // Instead, we just ensure the controls ALWAYS look at the planet.
 
             if (this.isTransitioning) {
+                // Calculate ideal offset based on planet size
                 const offset = this.focusedPlanet.data.size * 4 + 5;
                 const idealPos = new THREE.Vector3(0, offset * 0.5, offset).add(planetPos);
 
+                // Smoothly move Camera
                 this.camera.position.lerp(idealPos, 0.05);
+
+                // Smoothly move Focus Target
                 this.controls.target.lerp(planetPos, 0.1);
 
+                // Check if we are close enough to stop "Transitioning"
                 if (this.camera.position.distanceTo(idealPos) < 1.0) {
                     this.isTransitioning = false;
-
-                    // Lock On
-                    this.cameraRig.position.copy(planetPos);
-                    this.cameraRig.attach(this.camera);
-                    this.controls.target.set(0, 0, 0);
-                    this.controls.saveState();
+                    // FIX: Removed the 'attach' and 'set(0,0,0)' code that caused the bug.
                 }
+            } else {
+                // LOCKED STATE:
+                // We are not transitioning, but we must keep the target on the planet
+                // in case the planet is moving (Speed > 0) or stationary.
+                this.controls.target.copy(planetPos);
             }
         } else {
+            // NO PLANET FOCUSED (Overview Mode)
+            // Gently bring the target back to the center (Sun)
             this.controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.1);
 
             if (this.isTransitioning) {
