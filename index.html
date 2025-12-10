@@ -207,7 +207,6 @@
       border-radius: 20px;
       z-index: 100;
       display: none;
-      /* Hidden by default */
       opacity: 0;
       transition: all 0.3s ease;
       text-align: center;
@@ -215,7 +214,6 @@
       box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
     }
 
-    /* THIS IS THE CRITICAL CLASS */
     #ship-modal.open {
       display: block;
       opacity: 1;
@@ -278,24 +276,24 @@
   <div id="tooltip"></div>
 
   <div id="top-bar">
-    <button id="customize-btn" class="ui-btn">Select Ship</button>
+    <button id="customize-btn" class="ui-btn">Select Craft</button>
     <button id="gamemode-btn" class="ui-btn">Enter Spaceship</button>
   </div>
 
   <div id="ship-modal">
-    <h2>Select Your Craft</h2>
+    <h2>Hangar</h2>
     <div class="ship-options">
       <div class="ship-card" onclick="window.selectShip(0)">
-        <h3 style="color:#ff4444">Interceptor</h3>
-        <p>Speed: High<br>Handling: Sharp<br>Pilot: Ace</p>
+        <h3 style="color:#ff4444">Retro Rocket</h3>
+        <p>Style: Classic<br>Speed: High<br>Pilot: Astro</p>
       </div>
       <div class="ship-card" onclick="window.selectShip(1)">
-        <h3 style="color:#00aaff">Explorer</h3>
-        <p>Speed: Medium<br>Handling: Smooth<br>Pilot: Commander</p>
+        <h3 style="color:#00ffff">Cyber Speeder</h3>
+        <p>Style: Sci-Fi<br>Speed: Balanced<br>Pilot: NetRunner</p>
       </div>
       <div class="ship-card" onclick="window.selectShip(2)">
-        <h3 style="color:#ffcc00">Hauler</h3>
-        <p>Speed: Low<br>Handling: Heavy<br>Pilot: Miner</p>
+        <h3 style="color:#00ff44">Alien Saucer</h3>
+        <p>Style: Drifty<br>Speed: Agile<br>Pilot: Xorb</p>
       </div>
     </div>
   </div>
