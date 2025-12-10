@@ -193,7 +193,7 @@ export class InputManager {
                 this.controls.target.lerp(planetPos, 0.1);
 
                 // Check if we are close enough to stop "Transitioning"
-                if (this.camera.position.distanceTo(idealPos) < 1.0) {
+                if (this.camera.position.distanceTo(idealPos) < 4.0) {
                     this.isTransitioning = false;
 
                     // CHANGE 3: Transition Complete! Show the Data HUD.

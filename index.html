@@ -17,6 +17,15 @@
       display: block;
     }
 
+    /* --- MOVE DEBUG CONTROLS TO TOP LEFT --- */
+    .lil-gui.root {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      right: auto !important;
+      /* Force override default right positioning */
+    }
+
     #tooltip {
       position: absolute;
       background: rgba(0, 0, 0, 0.8);
@@ -33,23 +42,23 @@
       z-index: 10;
     }
 
-    /* --- NEW: THE DATA HUD --- */
+    /* --- INFO HUD: RIGHT SIDE --- */
     #info-panel {
       position: absolute;
       top: 0;
-      right: -400px;
-      /* Hidden off-screen */
-      width: 300px;
+      right: -450px;
+      /* Hidden off-screen right */
+      width: 350px;
       height: 100%;
       background: rgba(10, 15, 30, 0.85);
       /* Glassy dark blue */
       backdrop-filter: blur(12px);
-      /* Blur effect */
       border-left: 1px solid rgba(255, 255, 255, 0.2);
       color: white;
       padding: 40px;
       box-sizing: border-box;
-      transition: right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+      transition: right 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+      /* Smooth Slide */
       display: flex;
       flex-direction: column;
       z-index: 20;
@@ -61,40 +70,94 @@
     }
 
     #info-panel h1 {
-      margin-top: 0;
-      font-size: 32px;
+      margin-top: 50px;
+      font-size: 38px;
       border-bottom: 2px solid #00aaff;
-      padding-bottom: 10px;
+      padding-bottom: 15px;
       margin-bottom: 20px;
       text-transform: uppercase;
-      letter-spacing: 2px;
+      letter-spacing: 4px;
+      font-weight: 300;
     }
 
     #info-panel p {
-      line-height: 1.6;
+      line-height: 1.8;
       font-size: 16px;
       color: #ccc;
+      margin-bottom: 40px;
     }
 
     .data-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 15px;
-      margin-top: 30px;
-      background: rgba(255, 255, 255, 0.05);
-      padding: 15px;
-      border-radius: 8px;
+      grid-template-columns: 1fr;
+      gap: 25px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 25px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .data-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 10px;
     }
 
     .data-item span {
-      display: block;
       font-size: 12px;
       color: #00aaff;
       text-transform: uppercase;
+      letter-spacing: 1px;
     }
 
     .data-item strong {
       font-size: 18px;
+      font-weight: 400;
+    }
+
+    /* --- SEARCH BAR: BOTTOM CENTER --- */
+    #search-container {
+      position: absolute;
+      bottom: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      width: 300px;
+      text-align: center;
+    }
+
+    #search-input {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 16px;
+      width: 100%;
+      backdrop-filter: blur(8px);
+      outline: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #search-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+
+    #search-input:focus {
+      background: rgba(0, 0, 0, 0.9);
+      border-color: #00aaff;
+      width: 120%;
+      /* Expand slightly */
+      transform: translateY(-5px);
+      /* Slide UP slightly */
+      box-shadow: 0 10px 30px rgba(0, 170, 255, 0.2);
     }
   </style>
 
@@ -111,6 +174,10 @@
 
 <body>
   <div id="tooltip"></div>
+
+  <div id="search-container">
+    <input type="text" id="search-input" placeholder="Search Planet..." autocomplete="off">
+  </div>
 
   <div id="info-panel">
     <h1 id="planet-name">Planet</h1>
