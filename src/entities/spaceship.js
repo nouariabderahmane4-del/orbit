@@ -8,12 +8,12 @@ export class Spaceship {
         // --- 1. PHYSICS STATE ---
         this.position = new THREE.Vector3(0, 50, 100); // Start near Earth
         this.velocity = new THREE.Vector3(0, 0, 0);
-        this.acceleration = new THREE.Vector3(0, 0, 0);
 
-        // Settings
-        this.speed = 0.5;         // Engine power
-        this.turnSpeed = 0.03;    // Maneuverability
-        this.friction = 0.98;     // Space drag (0.99 = icy, 0.90 = thick mud)
+        // Settings: Adjusted for better control
+        this.maxSpeed = 2.0;      // Cap the maximum speed
+        this.acceleration = 0.05; // How fast we speed up (W)
+        this.turnSpeed = 0.04;    // How fast we turn
+        this.friction = 0.95;     // Higher drag = easier to stop (0.95 is "thicker" space)
 
         // --- 2. BUILD THE VISUAL SHIP ---
         this.mesh = this.createShipMesh();
@@ -22,12 +22,12 @@ export class Spaceship {
 
         // --- 3. INPUT STATE ---
         this.keys = {
-            forward: false,
-            backward: false,
-            left: false,
-            right: false,
-            up: false,    // Space
-            down: false   // Shift
+            thrust: false,
+            brake: false,
+            yawLeft: false,
+            yawRight: false,
+            pitchUp: false,
+            pitchDown: false
         };
 
         // Bind Input Listeners
@@ -53,8 +53,8 @@ export class Spaceship {
         const wingGeo = new THREE.BufferGeometry();
         const wingVertices = new Float32Array([
             0, 0, 2,   // Tip
-            5, 0, -2,  // Far Right
-            0, 0, -2   // Back Center
+            6, 0, -3,  // Far Right (Wider for cool look)
+            0, 0, -3   // Back Center
         ]);
         wingGeo.setAttribute('position', new THREE.BufferAttribute(wingVertices, 3));
         const wingMat = new THREE.MeshStandardMaterial({
@@ -81,64 +81,75 @@ export class Spaceship {
     }
 
     onKeyDown(event) {
+        // Prevent browser scrolling when using Arrows or Space
+        if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(event.code) > -1) {
+            event.preventDefault();
+        }
+
         switch (event.code) {
-            case 'KeyW': this.keys.forward = true; break;
-            case 'KeyS': this.keys.backward = true; break;
-            case 'KeyA': this.keys.left = true; break;
-            case 'KeyD': this.keys.right = true; break;
-            case 'Space': this.keys.up = true; break;
-            case 'ShiftLeft': this.keys.down = true; break;
+            case 'KeyW': this.keys.thrust = true; break;
+            case 'KeyS': this.keys.brake = true; break;
+            case 'ArrowLeft': this.keys.yawLeft = true; break;
+            case 'ArrowRight': this.keys.yawRight = true; break;
+            case 'ArrowUp': this.keys.pitchUp = true; break;
+            case 'ArrowDown': this.keys.pitchDown = true; break;
         }
     }
 
     onKeyUp(event) {
         switch (event.code) {
-            case 'KeyW': this.keys.forward = false; break;
-            case 'KeyS': this.keys.backward = false; break;
-            case 'KeyA': this.keys.left = false; break;
-            case 'KeyD': this.keys.right = false; break;
-            case 'Space': this.keys.up = false; break;
-            case 'ShiftLeft': this.keys.down = false; break;
+            case 'KeyW': this.keys.thrust = false; break;
+            case 'KeyS': this.keys.brake = false; break;
+            case 'ArrowLeft': this.keys.yawLeft = false; break;
+            case 'ArrowRight': this.keys.yawRight = false; break;
+            case 'ArrowUp': this.keys.pitchUp = false; break;
+            case 'ArrowDown': this.keys.pitchDown = false; break;
         }
     }
 
     update() {
         // 1. ROTATION (Direct Control)
-        if (this.keys.left) this.mesh.rotation.y += this.turnSpeed;
-        if (this.keys.right) this.mesh.rotation.y -= this.turnSpeed;
-        if (this.keys.up) this.mesh.rotation.x -= this.turnSpeed;
-        if (this.keys.down) this.mesh.rotation.x += this.turnSpeed;
+        // Arrow Left/Right = Yaw (Turn)
+        if (this.keys.yawLeft) this.mesh.rotation.y += this.turnSpeed;
+        if (this.keys.yawRight) this.mesh.rotation.y -= this.turnSpeed;
 
-        // 2. THRUST (Newton's 2nd Law: F = ma)
-        // We need to know which way is "Forward" for the ship
-        // .getDirection() gives us the normalized vector the ship is facing
+        // Arrow Up/Down = Pitch (Nose Up/Down)
+        // Note: Usually "Up" means nose up, which is negative X rotation in 3D space
+        if (this.keys.pitchUp) this.mesh.rotation.x -= this.turnSpeed;
+        if (this.keys.pitchDown) this.mesh.rotation.x += this.turnSpeed;
+
+        // 2. THRUST (Newton's 2nd Law)
+        // Get the direction the ship is currently facing
         const forwardDir = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
 
-        if (this.keys.forward) {
-            this.velocity.add(forwardDir.multiplyScalar(this.speed));
+        if (this.keys.thrust) {
+            this.velocity.add(forwardDir.multiplyScalar(this.acceleration));
         }
-        if (this.keys.backward) {
-            this.velocity.sub(forwardDir.multiplyScalar(this.speed * 0.5));
+        if (this.keys.brake) {
+            this.velocity.sub(forwardDir.multiplyScalar(this.acceleration * 0.5));
         }
 
-        // 3. APPLY VELOCITY TO POSITION
+        // Limit Speed (Safety Cap)
+        this.velocity.clampLength(0, this.maxSpeed);
+
+        // 3. APPLY VELOCITY
         this.position.add(this.velocity);
         this.mesh.position.copy(this.position);
 
-        // 4. FRICTION (Damping)
-        // In space, you don't stop unless you hit something.
-        // But for gameplay, we multiply velocity by 0.98 every frame to simulate "stabilizers".
+        // 4. FRICTION (Drag)
         this.velocity.multiplyScalar(this.friction);
 
         // 5. CAMERA CHASE (Third Person View)
-        // We want the camera to sit behind and slightly above the ship
-        const relativeCameraOffset = new THREE.Vector3(0, 10, -30); // Behind ship
+        // Calculate where the camera should be (Behind and Up)
+        const relativeCameraOffset = new THREE.Vector3(0, 8, -25);
 
-        // Transform that offset to World Coordinates based on ship's rotation
+        // Convert to World Coordinates
         const cameraOffset = relativeCameraOffset.applyMatrix4(this.mesh.matrixWorld);
 
-        // Smoothly move the camera to that spot
+        // Smoothly fly camera to that spot
         this.camera.position.lerp(cameraOffset, 0.1);
+
+        // Always look at the ship
         this.camera.lookAt(this.mesh.position);
     }
 }
