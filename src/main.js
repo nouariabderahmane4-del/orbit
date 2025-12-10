@@ -17,12 +17,9 @@ const starField = new StarField(engine.scene, 5000);
 const spaceship = new Spaceship(engine.scene, engine.camera);
 let isShipMode = false;
 
-// Function to initialize planets (for use in reset)
-function initializePlanets(planetsArray, scene) {
-    // 1. Clear array contents
-    planetsArray.length = 0;
-
-    // 2. Create Sun
+// Function to safely create planets for initial load and reset
+function createDefaultSolarSystem(planetsArray, scene) {
+    // 1. Create Sun
     const sun = new Planet({
         name: "Sun",
         size: 6.6825,
@@ -35,17 +32,14 @@ function initializePlanets(planetsArray, scene) {
     }, scene);
     planetsArray.push(sun);
 
-    // 3. Create Default Planets
+    // 2. Create Default Planets (Mercury through Neptune)
     planetData.forEach(data => {
         planetsArray.push(new Planet(data, scene));
     });
-
-    return sun;
 }
 
 const planets = [];
-const initialSun = initializePlanets(planets, engine.scene);
-// Note: initializePlanets is now in main.js for easy resetting
+createDefaultSolarSystem(planets, engine.scene);
 
 uiManager.setSearchCallback((query) => {
     if (isShipMode) {
@@ -59,10 +53,9 @@ uiManager.setSearchCallback((query) => {
 
 const guiManager = new GuiManager(planets, engine.scene);
 
-// --- OVERRIDE GUI MANAGER RESET TO HANDLE CAMERA/SHIP STATE ---
+// --- OVERRIDE GUI MANAGER RESET TO HANDLE CAMERA/SHIP STATE AND RESTORE DEFAULTS ---
 guiManager.resetSystem = () => {
-    // 1. Delete all existing planets (except Sun)
-    // We start from the back to delete user-added planets first.
+    // 1. SCENE CLEANUP: Delete ALL planets (except the Sun), and their GUI folders
     for (let i = planets.length - 1; i > 0; i--) {
         const planet = planets[i];
 
@@ -79,17 +72,28 @@ guiManager.resetSystem = () => {
         planets.splice(i, 1);
     }
 
-    // 2. Reset Camera to Overview
-    inputManager.resetFocus();
+    // 2. RE-CREATE DEFAULT SOLAR SYSTEM
+    // Remove the original planets from the GUI array first (Mercury through Neptune)
 
-    // 3. Optional: Reset Ship position if in orbit mode
+    // NOTE: The Sun (index 0) is the only item remaining in 'planets' array and the GUI.
+
+    // Now we re-add the default planets to the system
+    planetData.forEach(data => {
+        const newPlanet = new Planet(data, engine.scene);
+        planets.push(newPlanet);
+        // Re-add their GUI folders
+        guiManager.addPlanetFolder(newPlanet);
+    });
+
+    // 3. UI/CAMERA RESET
+    inputManager.resetFocus();
+    uiManager.hidePlanetInfo();
+
+    // Reset camera position manually (in case we were zoomed in)
     if (!isShipMode) {
         engine.camera.position.set(0, 60, 140);
         engine.camera.lookAt(0, 0, 0);
     }
-
-    // 4. Clean up any lingering focus/UI states
-    uiManager.hidePlanetInfo();
 };
 
 
