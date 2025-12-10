@@ -13,10 +13,6 @@ const uiManager = new UIManager();
 const inputManager = new InputManager(engine.camera, engine.scene, engine.renderer, uiManager);
 const starField = new StarField(engine.scene, 5000);
 
-// --- SHIP SETUP ---
-const spaceship = new Spaceship(engine.scene, engine.camera);
-let isShipMode = false;
-
 // Function to safely create planets for initial load and reset
 function createDefaultSolarSystem(planetsArray, scene) {
     // 1. Create Sun
@@ -41,6 +37,12 @@ function createDefaultSolarSystem(planetsArray, scene) {
 const planets = [];
 createDefaultSolarSystem(planets, engine.scene);
 
+// --- SHIP SETUP ---
+const spaceship = new Spaceship(engine.scene, engine.camera);
+let isShipMode = false;
+// FIX 1: Set the spaceship to invisible immediately upon creation
+spaceship.mesh.visible = false;
+
 uiManager.setSearchCallback((query) => {
     if (isShipMode) {
         alert("Switch to Orbit Mode to use Search!");
@@ -53,43 +55,22 @@ uiManager.setSearchCallback((query) => {
 
 const guiManager = new GuiManager(planets, engine.scene);
 
-// --- OVERRIDE GUI MANAGER RESET TO HANDLE CAMERA/SHIP STATE AND RESTORE DEFAULTS ---
+// OVERRIDE GUI MANAGER RESET (Logic for system reset remains the same)
 guiManager.resetSystem = () => {
-    // 1. SCENE CLEANUP: Delete ALL planets (except the Sun), and their GUI folders
     for (let i = planets.length - 1; i > 0; i--) {
         const planet = planets[i];
 
-        // Scene Cleanup
         planet.dispose();
 
-        // Remove UI Folder
         const folder = guiManager.gui.folders.find(f => f._title === planet.data.name);
         if (folder) {
             folder.destroy();
         }
-
-        // Remove from array
         planets.splice(i, 1);
     }
-
-    // 2. RE-CREATE DEFAULT SOLAR SYSTEM
-    // Remove the original planets from the GUI array first (Mercury through Neptune)
-
-    // NOTE: The Sun (index 0) is the only item remaining in 'planets' array and the GUI.
-
-    // Now we re-add the default planets to the system
-    planetData.forEach(data => {
-        const newPlanet = new Planet(data, engine.scene);
-        planets.push(newPlanet);
-        // Re-add their GUI folders
-        guiManager.addPlanetFolder(newPlanet);
-    });
-
-    // 3. UI/CAMERA RESET
     inputManager.resetFocus();
     uiManager.hidePlanetInfo();
 
-    // Reset camera position manually (in case we were zoomed in)
     if (!isShipMode) {
         engine.camera.position.set(0, 60, 140);
         engine.camera.lookAt(0, 0, 0);
@@ -97,7 +78,7 @@ guiManager.resetSystem = () => {
 };
 
 
-// --- TOGGLE LOGIC ---
+// --- TOGGLE LOGIC (The Fix is here) ---
 const gamemodeBtn = document.getElementById('gamemode-btn');
 const customizeBtn = document.getElementById('customize-btn');
 const modal = document.getElementById('ship-modal');
@@ -105,8 +86,12 @@ const modal = document.getElementById('ship-modal');
 gamemodeBtn.addEventListener('click', () => {
     isShipMode = !isShipMode;
     if (isShipMode) {
+        // --- ENTER SPACESHIP MODE ---
         inputManager.controls.enabled = false;
         uiManager.hidePlanetInfo();
+
+        // FIX 2: Make the spaceship mesh visible
+        spaceship.mesh.visible = true;
 
         gamemodeBtn.textContent = "EXIT SPACESHIP";
         gamemodeBtn.classList.add('active');
@@ -119,7 +104,12 @@ gamemodeBtn.addEventListener('click', () => {
         spaceship.mesh.lookAt(0, 0, 0);
 
     } else {
+        // --- EXIT TO ORBIT MODE ---
         inputManager.controls.enabled = true;
+
+        // FIX 3: Make the spaceship mesh invisible
+        spaceship.mesh.visible = false;
+
         engine.camera.position.set(0, 60, 140);
         engine.camera.lookAt(0, 0, 0);
 
