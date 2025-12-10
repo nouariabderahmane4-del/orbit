@@ -22,7 +22,6 @@
       --background-color: rgba(0, 0, 0, 0.7);
       --text-color: #ffffff;
       --title-background-color: rgba(0, 170, 255, 0.2);
-      /* Blue Tint Header */
       --widget-color: rgba(255, 255, 255, 0.1);
       --hover-color: rgba(255, 255, 255, 0.2);
       --focus-color: rgba(0, 170, 255, 0.6);
@@ -39,11 +38,9 @@
       border: 1px solid rgba(255, 255, 255, 0.2);
       border-radius: 12px;
       backdrop-filter: blur(12px);
-      /* Glass Effect */
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
-    /* Add spacing to folders */
     .lil-gui .title {
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
     }
@@ -181,7 +178,8 @@
     /* --- SEARCH BAR --- */
     #search-container {
       position: absolute;
-      bottom: 40px;
+      bottom: 80px;
+      /* Moved up slightly to make room for footer */
       left: 50%;
       transform: translateX(-50%);
       z-index: 30;
@@ -276,7 +274,6 @@
       transform: translateY(-8px);
     }
 
-    /* VISUAL ICONS */
     .ship-icon {
       font-size: 40px;
       margin-bottom: 15px;
@@ -284,7 +281,6 @@
       filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
     }
 
-    /* SPECIFIC THEMES */
     .ship-card.rocket:hover {
       border-color: #ff4444;
       box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
@@ -312,6 +308,29 @@
       color: #aaa;
       margin: 0;
       line-height: 1.4;
+    }
+
+    /* --- NEW: FOOTER --- */
+    #footer {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 12px;
+      font-weight: 300;
+      letter-spacing: 1px;
+      pointer-events: none;
+      /* Let clicks pass through */
+      z-index: 5;
+      text-transform: uppercase;
+    }
+
+    #footer span {
+      color: #a020f0;
+      /* Violet Heart Color */
+      font-size: 14px;
+      margin: 0 2px;
     }
   </style>
 
@@ -378,6 +397,10 @@
         <strong id="planet-mass">1.0 x</strong>
       </div>
     </div>
+  </div>
+
+  <div id="footer">
+    Built by Abdel <span>💜</span> &copy; 2025
   </div>
 
   <div id="scene-container"></div>
