@@ -40,7 +40,6 @@ createDefaultSolarSystem(planets, engine.scene);
 // --- SHIP SETUP ---
 const spaceship = new Spaceship(engine.scene, engine.camera);
 let isShipMode = false;
-// FIX 1: Set the spaceship to invisible immediately upon creation
 spaceship.mesh.visible = false;
 
 uiManager.setSearchCallback((query) => {
@@ -55,19 +54,39 @@ uiManager.setSearchCallback((query) => {
 
 const guiManager = new GuiManager(planets, engine.scene);
 
-// OVERRIDE GUI MANAGER RESET (Logic for system reset remains the same)
+// --- OVERRIDE GUI MANAGER RESET: FIX APPLIED HERE ---
 guiManager.resetSystem = () => {
+    // 1. SCENE CLEANUP: Delete ALL planets (except the Sun), and their GUI folders
     for (let i = planets.length - 1; i > 0; i--) {
         const planet = planets[i];
 
+        // Scene Cleanup
         planet.dispose();
 
+        // Remove UI Folder
         const folder = guiManager.gui.folders.find(f => f._title === planet.data.name);
         if (folder) {
             folder.destroy();
         }
+
+        // Remove from array (keeps the Sun at index 0)
         planets.splice(i, 1);
     }
+
+    // 2. RE-CREATE DEFAULT SOLAR SYSTEM
+    // The planets array now only contains the Sun. We re-add Mercury through Neptune.
+    planetData.forEach(data => {
+        // A. Create the new 3D object
+        const newPlanet = new Planet(data, engine.scene);
+
+        // B. Add to our tracking array
+        planets.push(newPlanet);
+
+        // C. CRITICAL FIX: Re-add their GUI folders so they reappear in the Controls menu
+        guiManager.addPlanetFolder(newPlanet);
+    });
+
+    // 3. UI/CAMERA RESET
     inputManager.resetFocus();
     uiManager.hidePlanetInfo();
 
@@ -78,7 +97,7 @@ guiManager.resetSystem = () => {
 };
 
 
-// --- TOGGLE LOGIC (The Fix is here) ---
+// --- TOGGLE LOGIC ---
 const gamemodeBtn = document.getElementById('gamemode-btn');
 const customizeBtn = document.getElementById('customize-btn');
 const modal = document.getElementById('ship-modal');
@@ -90,7 +109,6 @@ gamemodeBtn.addEventListener('click', () => {
         inputManager.controls.enabled = false;
         uiManager.hidePlanetInfo();
 
-        // FIX 2: Make the spaceship mesh visible
         spaceship.mesh.visible = true;
 
         gamemodeBtn.textContent = "EXIT SPACESHIP";
@@ -107,7 +125,6 @@ gamemodeBtn.addEventListener('click', () => {
         // --- EXIT TO ORBIT MODE ---
         inputManager.controls.enabled = true;
 
-        // FIX 3: Make the spaceship mesh invisible
         spaceship.mesh.visible = false;
 
         engine.camera.position.set(0, 60, 140);
