@@ -182,7 +182,7 @@ export class Spaceship {
         return group;
     }
 
-    // --- NEW REALISTIC PILOT ---
+    // --- NEW: HIGH DETAIL PILOT ---
     createPilot(helmetColor) {
         const pilotGroup = new THREE.Group();
 
@@ -193,14 +193,29 @@ export class Spaceship {
         head.position.y = 0.5;
         pilotGroup.add(head);
 
-        // 2. Visor (Glassy Curve)
-        // A slightly larger sphere, cut to only show the front face
-        const visorGeo = new THREE.SphereGeometry(0.36, 16, 16, 0, Math.PI * 2, 0, 0.7);
-        const visorMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 0.9 });
-        const visor = new THREE.Mesh(visorGeo, visorMat);
-        visor.rotation.x = -Math.PI / 2; // Rotate so the "cap" faces forward
-        visor.position.set(0, 0.52, 0); // Align with head
-        pilotGroup.add(visor);
+        // 2. Goggles (Two Lenses + Strap) -> Better than a single visor
+        const lensGeo = new THREE.CylinderGeometry(0.12, 0.12, 0.1, 16);
+        const lensMat = new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 0.9, roughness: 0.1 }); // Dark glass
+
+        // Left Eye
+        const leftEye = new THREE.Mesh(lensGeo, lensMat);
+        leftEye.rotation.x = Math.PI / 2;
+        leftEye.position.set(-0.15, 0.55, 0.32);
+        pilotGroup.add(leftEye);
+
+        // Right Eye
+        const rightEye = new THREE.Mesh(lensGeo, lensMat);
+        rightEye.rotation.x = Math.PI / 2;
+        rightEye.position.set(0.15, 0.55, 0.32);
+        pilotGroup.add(rightEye);
+
+        // Strap (Band around head)
+        const strapGeo = new THREE.TorusGeometry(0.34, 0.04, 8, 32);
+        const strapMat = new THREE.MeshBasicMaterial({ color: 0x222222 });
+        const strap = new THREE.Mesh(strapGeo, strapMat);
+        strap.rotation.x = Math.PI / 2;
+        strap.position.y = 0.55;
+        pilotGroup.add(strap);
 
         // 3. Body (Humanoid Cylinder)
         const bodyGeo = new THREE.CylinderGeometry(0.25, 0.3, 0.6, 8);
@@ -264,7 +279,11 @@ export class Spaceship {
         this.mesh.position.copy(this.position);
         this.velocity.multiplyScalar(this.friction);
 
-        const relativeCameraOffset = new THREE.Vector3(0, 8, -25);
+        // --- CAMERA UPDATE: CLOSER ZOOM ---
+        // WAS: new THREE.Vector3(0, 8, -25);
+        // NOW: new THREE.Vector3(0, 5, -12); -> Much closer and tighter
+        const relativeCameraOffset = new THREE.Vector3(0, 5, -12);
+
         const cameraOffset = relativeCameraOffset.applyMatrix4(this.mesh.matrixWorld);
         this.camera.position.lerp(cameraOffset, 0.1);
         this.camera.lookAt(this.mesh.position);
