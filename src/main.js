@@ -5,7 +5,7 @@ import { InputManager } from './systems/InputManager.js';
 import { GuiManager } from './systems/GuiManager.js';
 import { StarField } from './entities/StarField.js';
 import { UIManager } from './systems/UIManager.js';
-import { Spaceship } from './entities/Spaceship.js'; // <--- 1. Import
+import { Spaceship } from './entities/Spaceship.js';
 
 const engine = new SceneSetup('scene-container');
 
@@ -14,9 +14,9 @@ const inputManager = new InputManager(engine.camera, engine.scene, engine.render
 
 const starField = new StarField(engine.scene, 5000);
 
-// --- 2. Create the Ship ---
+// --- Create the Ship ---
 const spaceship = new Spaceship(engine.scene, engine.camera);
-let isShipMode = false; // By default, we are in "God Mode" (Orbit)
+let isShipMode = false; // Default: Orbit Mode
 
 const planets = [];
 
@@ -41,7 +41,6 @@ planetData.forEach(data => {
 
 // Search Logic
 uiManager.setSearchCallback((query) => {
-    // If we are flying the ship, we ignore search (or you could auto-pilot the ship!)
     if (isShipMode) {
         alert("Switch to Orbit Mode to use Search!");
         return;
@@ -55,35 +54,37 @@ uiManager.setSearchCallback((query) => {
     }
 });
 
+// Initialize GUI (Keep for planet sliders, but remove Game Modes folder)
 const guiManager = new GuiManager(planets);
 
-// --- 3. Add a Toggle in the GUI ---
-const modeParams = {
-    mode: 'Orbit (God Mode)',
-    toggle: () => {
-        isShipMode = !isShipMode;
+// --- NEW: UI BUTTON TOGGLE LOGIC ---
+const gamemodeBtn = document.getElementById('gamemode-btn');
 
-        if (isShipMode) {
-            // SWITCH TO SHIP
-            inputManager.controls.enabled = false; // Disable Orbit Controls
-            uiManager.hidePlanetInfo(); // Hide HUD
-            modeParams.mode = 'Spaceship (Pilot)';
-        } else {
-            // SWITCH TO ORBIT
-            inputManager.controls.enabled = true; // Re-enable Orbit
-            modeParams.mode = 'Orbit (God Mode)';
+gamemodeBtn.addEventListener('click', () => {
+    // 1. Toggle State
+    isShipMode = !isShipMode;
 
-            // Reset camera to a safe spot so it doesn't get stuck in the ship
-            engine.camera.position.set(0, 60, 140);
-            engine.camera.lookAt(0, 0, 0);
-        }
+    if (isShipMode) {
+        // --- ENTER SPACESHIP MODE ---
+        inputManager.controls.enabled = false; // Disable Orbit Controls
+        uiManager.hidePlanetInfo();            // Hide HUD
+
+        // Update Button Visuals
+        gamemodeBtn.textContent = "EXIT SPACESHIP";
+        gamemodeBtn.classList.add('active');
+    } else {
+        // --- EXIT TO ORBIT MODE ---
+        inputManager.controls.enabled = true;  // Re-enable Orbit
+
+        // Reset camera safely
+        engine.camera.position.set(0, 60, 140);
+        engine.camera.lookAt(0, 0, 0);
+
+        // Update Button Visuals
+        gamemodeBtn.textContent = "ENTER SPACESHIP";
+        gamemodeBtn.classList.remove('active');
     }
-};
-
-// Add the button to the GUI
-const folderModes = guiManager.gui.addFolder('Game Modes');
-folderModes.add(modeParams, 'toggle').name('Toggle Ship/Orbit');
-folderModes.add(modeParams, 'mode').listen().disable(); // Just a display label
+});
 
 function animate() {
     requestAnimationFrame(animate);
