@@ -71,7 +71,7 @@ export class InputManager {
         }
     }
 
-    // --- THE FIX: FRESH RAYCAST ON CLICK ---
+    // --- THE FIX: We removed the 'else' block that reset the camera ---
     handleActualClick() {
         // 1. Force the camera to be mathematically accurate right now
         this.camera.updateMatrixWorld();
@@ -93,10 +93,10 @@ export class InputManager {
             if (targetPlanet) {
                 this.focusOnPlanet(targetPlanet);
             }
-        } else {
-            // We truly hit nothing (Empty Space). NOW we can reset.
-            this.resetFocus();
         }
+        // FIX APPLIED HERE:
+        // Previous logic had an 'else { resetFocus() }' here.
+        // It is now removed so clicking background does nothing but allow rotation.
     }
 
     resetFocus() {
