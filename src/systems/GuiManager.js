@@ -17,6 +17,7 @@ export class GuiManager {
         folderGlobal.add(this.params, 'timeScale', 0, 5, 0.1).name('Speed Multiplier');
         folderGlobal.add(this.params, 'stop').name('Stop');
         folderGlobal.add(this.params, 'play').name('Play');
+        folderGlobal.close();
 
         // 2. Planet Controls
         // Loop through every planet and give it a folder
