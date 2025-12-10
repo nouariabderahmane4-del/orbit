@@ -47,28 +47,31 @@ const guiManager = new GuiManager(planets);
 
 // --- TOGGLE LOGIC ---
 const gamemodeBtn = document.getElementById('gamemode-btn');
+const customizeBtn = document.getElementById('customize-btn');
+const modal = document.getElementById('ship-modal');
+
 gamemodeBtn.addEventListener('click', () => {
     isShipMode = !isShipMode;
     if (isShipMode) {
+        // ENTER SPACESHIP
         inputManager.controls.enabled = false;
         uiManager.hidePlanetInfo();
         gamemodeBtn.textContent = "EXIT SPACESHIP";
         gamemodeBtn.classList.add('active');
-        document.getElementById('customize-btn').style.display = 'none'; // Hide Customize in flight
+        customizeBtn.style.display = 'none'; // Hide selection while flying
+        modal.classList.remove('open'); // Force close modal if open
     } else {
+        // EXIT TO ORBIT
         inputManager.controls.enabled = true;
         engine.camera.position.set(0, 60, 140);
         engine.camera.lookAt(0, 0, 0);
         gamemodeBtn.textContent = "ENTER SPACESHIP";
         gamemodeBtn.classList.remove('active');
-        document.getElementById('customize-btn').style.display = 'block'; // Show Customize
+        customizeBtn.style.display = 'block'; // Show selection again
     }
 });
 
 // --- CUSTOMIZE LOGIC ---
-const modal = document.getElementById('ship-modal');
-const customizeBtn = document.getElementById('customize-btn');
-
 customizeBtn.addEventListener('click', () => {
     modal.classList.add('open');
 });

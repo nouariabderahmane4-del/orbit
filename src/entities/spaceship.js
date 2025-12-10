@@ -9,7 +9,7 @@ export class Spaceship {
         this.position = new THREE.Vector3(0, 50, 100);
         this.velocity = new THREE.Vector3(0, 0, 0);
 
-        // Default Stats (Explorer)
+        // Default Stats
         this.maxSpeed = 2.0;
         this.acceleration = 0.05;
         this.turnSpeed = 0.04;
@@ -45,14 +45,14 @@ export class Spaceship {
             this.maxSpeed = 3.5;
             this.acceleration = 0.08;
             this.turnSpeed = 0.06;
-            this.friction = 0.92; // Drifts more
+            this.friction = 0.92;
             shipGeo = this.buildInterceptor();
         } else if (typeIndex === 2) {
             // --- TYPE 2: HAULER (Slow, Yellow) ---
             this.maxSpeed = 1.2;
             this.acceleration = 0.02;
             this.turnSpeed = 0.02;
-            this.friction = 0.98; // Stops fast
+            this.friction = 0.98;
             shipGeo = this.buildHauler();
         } else {
             // --- TYPE 1: EXPLORER (Balanced, Blue) ---
@@ -65,8 +65,8 @@ export class Spaceship {
 
         this.mesh.add(shipGeo);
 
-        // Reset rotation but keep position
-        this.mesh.rotation.set(0, 0, 0);
+        // --- FIX: Force ship to look at the Sun (0,0,0) immediately ---
+        this.mesh.lookAt(0, 0, 0);
     }
 
     // --- SHIP BUILDERS ---
@@ -76,20 +76,20 @@ export class Spaceship {
 
         // Body
         const body = new THREE.Mesh(
-            new THREE.ConeGeometry(1.5, 10, 4), // Sharp 4-sided
+            new THREE.ConeGeometry(1.5, 10, 4),
             new THREE.MeshStandardMaterial({ color: 0xff3333, roughness: 0.2, metalness: 0.8 })
         );
         body.rotation.x = Math.PI / 2;
-        body.rotation.y = Math.PI / 4; // Diamond shape
+        body.rotation.y = Math.PI / 4;
         group.add(body);
 
-        // Wings (Swept back)
+        // Wings
         const wingGeo = new THREE.BoxGeometry(8, 0.2, 3);
         const wings = new THREE.Mesh(wingGeo, new THREE.MeshStandardMaterial({ color: 0xaa0000 }));
         wings.position.z = 2;
         group.add(wings);
 
-        // Pilot (Red Helmet)
+        // Pilot
         const pilot = this.createPilot(0xff0000);
         pilot.position.set(0, 0.5, -1);
         group.add(pilot);
@@ -100,7 +100,7 @@ export class Spaceship {
     buildExplorer() {
         const group = new THREE.Group();
 
-        // Body (Cylinder)
+        // Body
         const body = new THREE.Mesh(
             new THREE.CylinderGeometry(1.5, 1, 8, 8),
             new THREE.MeshStandardMaterial({ color: 0x00aaff, roughness: 0.4 })
@@ -108,14 +108,14 @@ export class Spaceship {
         body.rotation.x = Math.PI / 2;
         group.add(body);
 
-        // Wings (Flat)
+        // Wings
         const wing = new THREE.Mesh(
             new THREE.BoxGeometry(7, 0.3, 2),
             new THREE.MeshStandardMaterial({ color: 0xffffff })
         );
         group.add(wing);
 
-        // Cockpit Glass
+        // Cockpit
         const cockpit = new THREE.Mesh(
             new THREE.SphereGeometry(1.4, 16, 16, 0, Math.PI * 2, 0, Math.PI / 2),
             new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0 })
@@ -124,7 +124,7 @@ export class Spaceship {
         cockpit.position.z = -1;
         group.add(cockpit);
 
-        // Pilot (White Helmet)
+        // Pilot
         const pilot = this.createPilot(0xffffff);
         pilot.position.set(0, 0.5, -1);
         group.add(pilot);
@@ -135,14 +135,14 @@ export class Spaceship {
     buildHauler() {
         const group = new THREE.Group();
 
-        // Body (Boxy)
+        // Body
         const body = new THREE.Mesh(
             new THREE.BoxGeometry(3, 3, 6),
             new THREE.MeshStandardMaterial({ color: 0xffcc00, roughness: 0.8 })
         );
         group.add(body);
 
-        // Cargo Containers
+        // Cargo
         const cargo = new THREE.Mesh(
             new THREE.BoxGeometry(4, 2, 2),
             new THREE.MeshStandardMaterial({ color: 0x333333 })
@@ -150,7 +150,7 @@ export class Spaceship {
         cargo.position.set(0, 0, 2);
         group.add(cargo);
 
-        // Pilot (Grey Helmet)
+        // Pilot
         const pilot = this.createPilot(0x555555);
         pilot.position.set(0, 0.8, -2);
         group.add(pilot);
