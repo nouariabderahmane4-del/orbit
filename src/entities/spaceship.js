@@ -6,7 +6,7 @@ export class Spaceship {
         this.camera = camera;
 
         // Physics State
-        this.position = new THREE.Vector3(0, 0, 0);
+        this.position = new THREE.Vector3(0, 50, 50);
         this.velocity = new THREE.Vector3(0, 0, 0);
 
         // Default Stats
