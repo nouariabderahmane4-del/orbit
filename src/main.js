@@ -5,14 +5,18 @@ import { InputManager } from './systems/InputManager.js';
 import { GuiManager } from './systems/GuiManager.js';
 import { StarField } from './entities/StarField.js';
 import { UIManager } from './systems/UIManager.js';
+import { Spaceship } from './entities/Spaceship.js'; // <--- 1. Import
 
 const engine = new SceneSetup('scene-container');
 
-// --- 1. Setup UI & Input ---
 const uiManager = new UIManager();
 const inputManager = new InputManager(engine.camera, engine.scene, engine.renderer, uiManager);
 
 const starField = new StarField(engine.scene, 5000);
+
+// --- 2. Create the Ship ---
+const spaceship = new Spaceship(engine.scene, engine.camera);
+let isShipMode = false; // By default, we are in "God Mode" (Orbit)
 
 const planets = [];
 
@@ -35,23 +39,51 @@ planetData.forEach(data => {
     planets.push(planet);
 });
 
-// --- 2. Connect Search Logic ---
-// When the user hits Enter in the search bar, this runs:
+// Search Logic
 uiManager.setSearchCallback((query) => {
-    // A. Find the planet (Case insensitive)
-    const target = planets.find(p => p.data.name.toLowerCase() === query);
+    // If we are flying the ship, we ignore search (or you could auto-pilot the ship!)
+    if (isShipMode) {
+        alert("Switch to Orbit Mode to use Search!");
+        return;
+    }
 
+    const target = planets.find(p => p.data.name.toLowerCase() === query);
     if (target) {
-        // B. Fly to it
         inputManager.focusOnPlanet(target);
     } else {
-        // C. Error feedback
-        alert(`Planet "${query}" not found! Try 'Earth', 'Mars', or 'Saturn'.`);
+        alert(`Planet "${query}" not found!`);
     }
 });
 
-// Initialize GUI
 const guiManager = new GuiManager(planets);
+
+// --- 3. Add a Toggle in the GUI ---
+const modeParams = {
+    mode: 'Orbit (God Mode)',
+    toggle: () => {
+        isShipMode = !isShipMode;
+
+        if (isShipMode) {
+            // SWITCH TO SHIP
+            inputManager.controls.enabled = false; // Disable Orbit Controls
+            uiManager.hidePlanetInfo(); // Hide HUD
+            modeParams.mode = 'Spaceship (Pilot)';
+        } else {
+            // SWITCH TO ORBIT
+            inputManager.controls.enabled = true; // Re-enable Orbit
+            modeParams.mode = 'Orbit (God Mode)';
+
+            // Reset camera to a safe spot so it doesn't get stuck in the ship
+            engine.camera.position.set(0, 60, 140);
+            engine.camera.lookAt(0, 0, 0);
+        }
+    }
+};
+
+// Add the button to the GUI
+const folderModes = guiManager.gui.addFolder('Game Modes');
+folderModes.add(modeParams, 'toggle').name('Toggle Ship/Orbit');
+folderModes.add(modeParams, 'mode').listen().disable(); // Just a display label
 
 function animate() {
     requestAnimationFrame(animate);
@@ -62,7 +94,13 @@ function animate() {
         planet.update(timeScale);
     });
 
-    inputManager.update(planets);
+    if (isShipMode) {
+        // Update Physics
+        spaceship.update();
+    } else {
+        // Update Mouse/Click Interaction
+        inputManager.update(planets);
+    }
 
     engine.render();
 }
