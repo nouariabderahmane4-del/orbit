@@ -4,47 +4,9 @@
 
 ---
 
-## 🎨 Project Logo
-
-You can place the logo file at:
-
-```text
-./assets/orbit-logo.svg
-```
-
-Example usage in HTML:
-
-```html
-<img src="./assets/orbit-logo.svg" alt="Orbit Logo" width="220" />
-```
-
-Or in Markdown:
-
-```md
-![Orbit Logo](./assets/orbit-logo.svg)
-```
-
----
-
 ## 🎥 GIF Preview
 
-Show a short GIF of the simulation in action to instantly communicate what Orbit does.
-
-Suggested filename:
-
-```text
-./assets/orbit-preview.gif
-```
-
-Example usage:
-
-```md
-## 🎥 Live Preview
-
 ![Orbit Preview](./assets/orbit-preview.gif)
-```
-
-You can record the GIF using tools like ScreenToGif, ShareX, or OBS + an online GIF converter, then drop it into the `assets/` folder.
 
 ---
 
@@ -64,7 +26,7 @@ This simulation allows users to:
 - Search planets instantly  
 - Reset the entire system at any time  
 
-Designed for an after-school science club, Orbit transforms abstract astronomy ideas into an immersive digital experience.
+Orbit transforms abstract astronomy ideas into an immersive digital experience.
 
 ---
 
@@ -257,8 +219,8 @@ src/
 ### 1️⃣ Clone the repository
 
 ```bash
-git clone <your-repo-url>
-cd orbit-solar-system
+git clone https://gitea.kood.tech/abderahmanenouari/orbit.git
+cd orbit
 ```
 
 ### 2️⃣ Start a local dev server
@@ -309,5 +271,4 @@ By building/reading this project, you can learn:
 - **Development:** Abdel (2025)  
 - **3D Engine:** [Three.js](https://threejs.org/)  
 - **GUI:** [lil-gui](https://lil-gui.georgealways.com/)  
-- **Inspiration:** Space posters and curious students at the after‑school science club 🌌
 
