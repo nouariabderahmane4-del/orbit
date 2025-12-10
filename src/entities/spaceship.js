@@ -105,9 +105,9 @@ export class Spaceship {
 
         // PILOT: High Visibility
         const pilot = this.createPilot(0xffcc00); // Yellow Helmet
-        pilot.position.set(0, 0.8, 1.0); // Moved up and forward
-        pilot.scale.set(1.2, 1.2, 1.2);  // Bigger
-        pilot.rotation.y = Math.PI;      // Face forward
+        pilot.position.set(0, 0.8, 1.0);
+        pilot.scale.set(1.2, 1.2, 1.2);
+        pilot.rotation.y = Math.PI;
         group.add(pilot);
 
         return group;
@@ -122,12 +122,12 @@ export class Spaceship {
         const disk = new THREE.Mesh(diskGeo, new THREE.MeshStandardMaterial({ color: 0x00ff44, metalness: 0.9 }));
         group.add(disk);
 
-        // Dome: MORE TRANSPARENT NOW
+        // Dome
         const domeGeo = new THREE.SphereGeometry(1.2, 32, 16, 0, Math.PI * 2, 0, Math.PI / 2);
         const domeMat = new THREE.MeshStandardMaterial({
             color: 0x88ccff,
             transparent: true,
-            opacity: 0.3, // Cleared up visibility
+            opacity: 0.3,
             roughness: 0
         });
         const dome = new THREE.Mesh(domeGeo, domeMat);
@@ -144,8 +144,8 @@ export class Spaceship {
         // PILOT: Alien
         const pilot = this.createPilot(0x888888); // Grey Alien
         pilot.position.set(0, 0.5, 0);
-        pilot.scale.set(1.5, 1.5, 1.5); // Huge head
-        pilot.rotation.y = Math.PI;     // Face forward
+        pilot.scale.set(1.5, 1.5, 1.5);
+        pilot.rotation.y = Math.PI;
         group.add(pilot);
 
         return group;
@@ -174,38 +174,47 @@ export class Spaceship {
 
         // PILOT: Cyber Rider
         const pilot = this.createPilot(0x00ffff); // Cyan Helmet
-        pilot.position.set(0, 0.6, -0.5); // Sitting on top
+        pilot.position.set(0, 0.6, -0.5);
         pilot.scale.set(1.1, 1.1, 1.1);
-        pilot.rotation.y = Math.PI;       // Face forward
+        pilot.rotation.y = Math.PI;
         group.add(pilot);
 
         return group;
     }
 
-    // --- NEW DETAILED PILOT ---
+    // --- NEW REALISTIC PILOT ---
     createPilot(helmetColor) {
         const pilotGroup = new THREE.Group();
 
-        // 1. Helmet (The Head)
-        const headGeo = new THREE.BoxGeometry(0.6, 0.6, 0.6); // Boxy sci-fi helmet looks cooler
+        // 1. Helmet (Round Sphere)
+        const headGeo = new THREE.SphereGeometry(0.35, 16, 16);
         const headMat = new THREE.MeshStandardMaterial({ color: helmetColor, roughness: 0.3 });
         const head = new THREE.Mesh(headGeo, headMat);
         head.position.y = 0.5;
         pilotGroup.add(head);
 
-        // 2. Visor (The Face) - Helps orientation
-        const visorGeo = new THREE.BoxGeometry(0.5, 0.2, 0.1);
+        // 2. Visor (Glassy Curve)
+        // A slightly larger sphere, cut to only show the front face
+        const visorGeo = new THREE.SphereGeometry(0.36, 16, 16, 0, Math.PI * 2, 0, 0.7);
         const visorMat = new THREE.MeshStandardMaterial({ color: 0x000000, roughness: 0.1, metalness: 0.9 });
         const visor = new THREE.Mesh(visorGeo, visorMat);
-        visor.position.set(0, 0.5, 0.31); // Stick it on the front of the face
+        visor.rotation.x = -Math.PI / 2; // Rotate so the "cap" faces forward
+        visor.position.set(0, 0.52, 0); // Align with head
         pilotGroup.add(visor);
 
-        // 3. Body (Suit)
-        const bodyGeo = new THREE.CylinderGeometry(0.3, 0.4, 0.8, 8);
-        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 }); // Dark Grey Suit
+        // 3. Body (Humanoid Cylinder)
+        const bodyGeo = new THREE.CylinderGeometry(0.25, 0.3, 0.6, 8);
+        const bodyMat = new THREE.MeshStandardMaterial({ color: 0x222222 });
         const body = new THREE.Mesh(bodyGeo, bodyMat);
-        body.position.y = -0.2;
+        body.position.y = -0.1;
         pilotGroup.add(body);
+
+        // 4. Backpack (Life Support) - Adds detail
+        const bagGeo = new THREE.BoxGeometry(0.4, 0.5, 0.2);
+        const bagMat = new THREE.MeshStandardMaterial({ color: 0x444444 });
+        const bag = new THREE.Mesh(bagGeo, bagMat);
+        bag.position.set(0, -0.1, -0.25);
+        pilotGroup.add(bag);
 
         return pilotGroup;
     }
