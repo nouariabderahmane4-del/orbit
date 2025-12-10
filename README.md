@@ -3,6 +3,11 @@
 > 3D educational solar system built with Three.js, featuring realistic planets, moons, CRUD controls, and a bonus spaceship flight mode.
 
 ---
+## 🔴 Live Preview
+
+[🔗 Open Live Demo](https://orbitforkids.netlify.app/)
+
+---
 
 ## 🎥 GIF Preview
 
