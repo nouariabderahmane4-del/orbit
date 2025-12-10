@@ -17,14 +17,38 @@
       display: block;
     }
 
-    /* --- UI ELEMENTS --- */
+    /* --- CUSTOM THEME FOR CONTROL PANEL (LIL-GUI) --- */
+    .lil-gui {
+      --background-color: rgba(0, 0, 0, 0.7);
+      --text-color: #ffffff;
+      --title-background-color: rgba(0, 170, 255, 0.2);
+      /* Blue Tint Header */
+      --widget-color: rgba(255, 255, 255, 0.1);
+      --hover-color: rgba(255, 255, 255, 0.2);
+      --focus-color: rgba(0, 170, 255, 0.6);
+      --number-color: #00aaff;
+      --string-color: #00aaff;
+      font-size: 13px;
+    }
+
     .lil-gui.root {
       position: absolute;
       top: 100px;
       left: 20px;
       right: auto !important;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      /* Glass Effect */
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
     }
 
+    /* Add spacing to folders */
+    .lil-gui .title {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* --- UI ELEMENTS --- */
     #tooltip {
       position: absolute;
       background: rgba(0, 0, 0, 0.8);
@@ -195,7 +219,7 @@
       box-shadow: 0 10px 30px rgba(0, 170, 255, 0.2);
     }
 
-    /* --- SHIP SELECTION MODAL (NEW STYLES) --- */
+    /* --- SHIP SELECTION MODAL --- */
     #ship-modal {
       position: absolute;
       top: 50%;
@@ -313,7 +337,6 @@
   <div id="ship-modal">
     <h2>Hangar</h2>
     <div class="ship-options">
-
       <div class="ship-card rocket" onclick="window.selectShip(0)">
         <span class="ship-icon">🚀</span>
         <h3 style="color:#ff4444">Retro Rocket</h3>
@@ -331,7 +354,6 @@
         <h3 style="color:#00ff44">Alien Saucer</h3>
         <p>Speed: Agile<br>Handling: Drifty</p>
       </div>
-
     </div>
   </div>
 
