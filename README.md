@@ -12,7 +12,7 @@
 
 ## 🌞 Overview
 
-Orbit is a **fully interactive, fully customizable 3D model of our Solar System**, built to help students learn astronomy through hands-on experimentation.
+Orbit is a **fully interactive, fully customizable 3D model of our Solar System**, built to help kids learn astronomy through hands-on experimentation.
 
 This simulation allows users to:
 
