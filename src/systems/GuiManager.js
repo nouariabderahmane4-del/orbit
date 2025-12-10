@@ -1,12 +1,13 @@
 import GUI from 'lil-gui';
+import * as THREE from 'three';
 
 export class GuiManager {
     constructor(planets) {
         this.planets = planets;
-        this.gui = new GUI();
+        // The root GUI container
+        this.gui = new GUI({ title: 'Controls' });
 
-        // 1. Global Simulation Speed
-        // We create a simple object to hold the value
+        // --- 1. GLOBAL SPEED CONTROLS ---
         this.params = {
             timeScale: 1.0,
             stop: () => { this.params.timeScale = 0; },
@@ -17,21 +18,21 @@ export class GuiManager {
         folderGlobal.add(this.params, 'timeScale', 0, 5, 0.1).name('Speed Multiplier');
         folderGlobal.add(this.params, 'stop').name('Stop');
         folderGlobal.add(this.params, 'play').name('Play');
+
+        // FIX: This forces the "Simulation Control" block to start CLOSED
         folderGlobal.close();
 
-        // 2. Planet Controls
-        // Loop through every planet and give it a folder
+        // --- 2. PLANET CONTROLS ---
         planets.forEach(planet => {
             const folder = this.gui.addFolder(planet.data.name);
 
-            // Size Slider (0.1 to 10)
+            // Size Slider
             folder.add(planet.data, 'size', 0.1, 10).onChange(val => {
-                // When slider moves, we must rebuild the geometry
                 planet.planetMesh.geometry.dispose();
                 planet.planetMesh.geometry = new THREE.SphereGeometry(val, 32, 32);
             });
 
-            // Distance Slider (0 to 100)
+            // Distance Slider
             folder.add(planet.data, 'distance', 0, 100).name('Distance').onChange(val => {
                 planet.planetMesh.position.x = val;
             });
@@ -44,9 +45,9 @@ export class GuiManager {
 
             // Speed Slider
             folder.add(planet.data, 'speed', 0, 0.1).name('Orbit Speed');
+
+            // FIX: This forces every Planet folder (Sun, Mercury, etc.) to start CLOSED
+            folder.close();
         });
     }
 }
-
-// Helper to access THREE because we used it inside the class without importing
-import * as THREE from 'three';
