@@ -2,15 +2,17 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 export class InputManager {
-    constructor(camera, scene, renderer) {
+    // CHANGE 1: We added 'uiManager' to the constructor arguments
+    constructor(camera, scene, renderer, uiManager) {
         this.camera = camera;
         this.scene = scene;
         this.renderer = renderer;
+        this.uiManager = uiManager; // Store it for later use
 
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
 
-        // 1. Create the Rig (We keep this for potential future use, but won't parent the camera to it)
+        // 1. Create the Rig
         this.cameraRig = new THREE.Object3D();
         this.scene.add(this.cameraRig);
 
@@ -98,6 +100,9 @@ export class InputManager {
 
     resetFocus() {
         if (!this.focusedPlanet) return;
+
+        // CHANGE 2: Hide the UI when we leave a planet
+        this.uiManager.hidePlanetInfo();
 
         // Ensure camera is attached to scene (Safety check)
         this.scene.attach(this.camera);
@@ -190,12 +195,14 @@ export class InputManager {
                 // Check if we are close enough to stop "Transitioning"
                 if (this.camera.position.distanceTo(idealPos) < 1.0) {
                     this.isTransitioning = false;
-                    // FIX: Removed the 'attach' and 'set(0,0,0)' code that caused the bug.
+
+                    // CHANGE 3: Transition Complete! Show the Data HUD.
+                    // We pass the planet data (name, description, temp) to the UI Manager
+                    this.uiManager.showPlanetInfo(this.focusedPlanet.data);
                 }
             } else {
                 // LOCKED STATE:
                 // We are not transitioning, but we must keep the target on the planet
-                // in case the planet is moving (Speed > 0) or stationary.
                 this.controls.target.copy(planetPos);
             }
         } else {

@@ -5,7 +5,9 @@ export const planetData = [
         size: 0.8,
         distance: 10,
         speed: 0.04,
-        texture: "./public/textures/mercury.jpg"
+        texture: "./public/textures/mercury.jpg",
+        description: "The smallest planet in our solar system and closest to the Sun—is only slightly larger than Earth's Moon.",
+        details: { mass: "0.330 x 10^24 kg", temp: "167 °C", gravity: "3.7 m/s²" }
     },
     {
         name: "Venus",
@@ -14,7 +16,9 @@ export const planetData = [
         distance: 15,
         speed: 0.02,
         texture: "./public/textures/venus.jpg",
-        atmosphere: { color: 0xFFA500, opacity: 0.6 } // Venus has a thick atmosphere
+        atmosphere: { color: 0xFFA500, opacity: 0.6 },
+        description: "Spinning in the opposite direction to most planets, Venus is the hottest planet, with temperatures hot enough to melt lead.",
+        details: { mass: "4.87 x 10^24 kg", temp: "464 °C", gravity: "8.87 m/s²" }
     },
     {
         name: "Earth",
@@ -23,10 +27,10 @@ export const planetData = [
         distance: 20,
         speed: 0.015,
         texture: "./public/textures/earth.jpg",
-        // NEW: Cloud layer
         clouds: "./public/textures/earth_clouds.png",
-        // NEW: Atmosphere Glow
-        atmosphere: { color: 0x00aaff, opacity: 0.4 }
+        atmosphere: { color: 0x00aaff, opacity: 0.4 },
+        description: "Our home planet is the only place we know of so far that’s inhabited by living things. It's also the only planet with liquid water on the surface.",
+        details: { mass: "5.97 x 10^24 kg", temp: "15 °C", gravity: "9.8 m/s²" }
     },
     {
         name: "Mars",
@@ -35,7 +39,9 @@ export const planetData = [
         distance: 25,
         speed: 0.01,
         texture: "./public/textures/mars.jpg",
-        atmosphere: { color: 0xff5500, opacity: 0.2 } // Thin red atmosphere
+        atmosphere: { color: 0xff5500, opacity: 0.2 },
+        description: "Mars is a dusty, cold, desert world with a very thin atmosphere. There is strong evidence that Mars was—billions of years ago—wetter and warmer.",
+        details: { mass: "0.642 x 10^24 kg", temp: "-65 °C", gravity: "3.71 m/s²" }
     },
     {
         name: "Jupiter",
@@ -43,7 +49,9 @@ export const planetData = [
         size: 3.5,
         distance: 35,
         speed: 0.005,
-        texture: "./public/textures/jupiter.jpg"
+        texture: "./public/textures/jupiter.jpg",
+        description: "Jupiter is more than twice as massive as the other planets of our solar system combined. The Great Red Spot is a giant storm bigger than Earth.",
+        details: { mass: "1898 x 10^24 kg", temp: "-110 °C", gravity: "24.79 m/s²" }
     },
     {
         name: "Saturn",
@@ -51,7 +59,9 @@ export const planetData = [
         size: 3.0,
         distance: 45,
         speed: 0.003,
-        texture: "./public/textures/saturn.jpg"
+        texture: "./public/textures/saturn.jpg",
+        description: "Adorned with a dazzling, complex system of icy rings, Saturn is unique in our solar system. The other giant planets have rings, but none are as spectacular.",
+        details: { mass: "568 x 10^24 kg", temp: "-140 °C", gravity: "10.44 m/s²" }
     },
     {
         name: "Uranus",
@@ -59,7 +69,9 @@ export const planetData = [
         size: 2.0,
         distance: 55,
         speed: 0.002,
-        texture: "./public/textures/uranus.jpg"
+        texture: "./public/textures/uranus.jpg",
+        description: "Uranus rotates at a nearly 90-degree angle from the plane of its orbit. This unique tilt makes Uranus appear to spin on its side.",
+        details: { mass: "86.8 x 10^24 kg", temp: "-195 °C", gravity: "8.69 m/s²" }
     },
     {
         name: "Neptune",
@@ -67,6 +79,8 @@ export const planetData = [
         size: 2.0,
         distance: 65,
         speed: 0.001,
-        texture: "./public/textures/neptune.jpg"
+        texture: "./public/textures/neptune.jpg",
+        description: "Neptune is dark, cold and whipped by supersonic winds. It was the first planet located through mathematical calculations.",
+        details: { mass: "102 x 10^24 kg", temp: "-200 °C", gravity: "11.15 m/s²" }
     }
 ];

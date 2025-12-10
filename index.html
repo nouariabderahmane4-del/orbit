@@ -10,32 +10,91 @@
       margin: 0;
       overflow: hidden;
       background-color: #000;
-      font-family: sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     }
 
     canvas {
       display: block;
     }
 
-    /* The floating label for planet names */
     #tooltip {
       position: absolute;
       background: rgba(0, 0, 0, 0.8);
-      /* Semi-transparent black */
       color: white;
       padding: 8px 12px;
       border-radius: 4px;
       font-size: 14px;
       pointer-events: none;
-      /* Let clicks pass through to the canvas */
       display: none;
-      /* Hidden by default */
       top: 0;
       left: 0;
       border: 1px solid rgba(255, 255, 255, 0.3);
       white-space: nowrap;
       z-index: 10;
-      /* Ensure it sits on top of the 3D canvas */
+    }
+
+    /* --- NEW: THE DATA HUD --- */
+    #info-panel {
+      position: absolute;
+      top: 0;
+      right: -400px;
+      /* Hidden off-screen */
+      width: 300px;
+      height: 100%;
+      background: rgba(10, 15, 30, 0.85);
+      /* Glassy dark blue */
+      backdrop-filter: blur(12px);
+      /* Blur effect */
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 40px;
+      box-sizing: border-box;
+      transition: right 0.4s cubic-bezier(0.2, 0.8, 0.2, 1);
+      display: flex;
+      flex-direction: column;
+      z-index: 20;
+    }
+
+    #info-panel.active {
+      right: 0;
+      /* Slide in */
+    }
+
+    #info-panel h1 {
+      margin-top: 0;
+      font-size: 32px;
+      border-bottom: 2px solid #00aaff;
+      padding-bottom: 10px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+    }
+
+    #info-panel p {
+      line-height: 1.6;
+      font-size: 16px;
+      color: #ccc;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-top: 30px;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 15px;
+      border-radius: 8px;
+    }
+
+    .data-item span {
+      display: block;
+      font-size: 12px;
+      color: #00aaff;
+      text-transform: uppercase;
+    }
+
+    .data-item strong {
+      font-size: 18px;
     }
   </style>
 
@@ -52,6 +111,26 @@
 
 <body>
   <div id="tooltip"></div>
+
+  <div id="info-panel">
+    <h1 id="planet-name">Planet</h1>
+    <p id="planet-desc">Description goes here...</p>
+
+    <div class="data-grid">
+      <div class="data-item">
+        <span>Temperature</span>
+        <strong id="planet-temp">0°C</strong>
+      </div>
+      <div class="data-item">
+        <span>Gravity</span>
+        <strong id="planet-gravity">9.8 m/s²</strong>
+      </div>
+      <div class="data-item">
+        <span>Mass</span>
+        <strong id="planet-mass">1.0 x</strong>
+      </div>
+    </div>
+  </div>
 
   <div id="scene-container"></div>
 
