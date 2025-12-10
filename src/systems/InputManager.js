@@ -2,12 +2,11 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 
 export class InputManager {
-    // CHANGE 1: We added 'uiManager' to the constructor arguments
     constructor(camera, scene, renderer, uiManager) {
         this.camera = camera;
         this.scene = scene;
         this.renderer = renderer;
-        this.uiManager = uiManager; // Store it for later use
+        this.uiManager = uiManager;
 
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
@@ -95,13 +94,12 @@ export class InputManager {
                 this.focusOnPlanet(targetPlanet);
             }
         }
-        // Note: No 'else' block here. Clicking empty space does nothing.
     }
 
     resetFocus() {
         if (!this.focusedPlanet) return;
 
-        // CHANGE 2: Hide the UI when we leave a planet
+        // Hide the UI when we leave a planet
         this.uiManager.hidePlanetInfo();
 
         // Ensure camera is attached to scene (Safety check)
@@ -162,7 +160,16 @@ export class InputManager {
             this.hoveredPlanet = this.findPlanetFromMesh(hitObject, planets);
 
             if (this.hoveredPlanet) {
-                this.showTooltip(this.hoveredPlanet.data.name);
+                // --- FIX: UPDATED TOOLTIP CONTENT TO MATCH REQUIREMENTS ---
+                const d = this.hoveredPlanet.data;
+                const tooltipHTML = `
+                    <div style="text-align: left; line-height: 1.4;">
+                        <strong style="color: #00aaff; font-size: 14px;">${d.name}</strong><br>
+                        <span style="color: #ccc; font-size: 12px;">Size:</span> ${d.size.toFixed(2)}<br>
+                        <span style="color: #ccc; font-size: 12px;">Distance:</span> ${d.distance}
+                    </div>
+                `;
+                this.showTooltip(tooltipHTML);
                 document.body.style.cursor = 'pointer';
             }
         } else {
@@ -178,16 +185,13 @@ export class InputManager {
             const planetPos = new THREE.Vector3();
             this.focusedPlanet.planetMesh.getWorldPosition(planetPos);
 
-            // FIX: We no longer attach the camera to the rig.
-            // Instead, we just ensure the controls ALWAYS look at the planet.
-
             if (this.isTransitioning) {
                 // Calculate ideal offset based on planet size
                 const offset = this.focusedPlanet.data.size * 4 + 5;
                 const idealPos = new THREE.Vector3(0, offset * 0.5, offset).add(planetPos);
 
                 // Smoothly move Camera
-                this.camera.position.lerp(idealPos, 0.05);
+                this.camera.position.lerp(idealPos, 0.1);
 
                 // Smoothly move Focus Target
                 this.controls.target.lerp(planetPos, 0.1);
@@ -196,8 +200,7 @@ export class InputManager {
                 if (this.camera.position.distanceTo(idealPos) < 4.0) {
                     this.isTransitioning = false;
 
-                    // CHANGE 3: Transition Complete! Show the Data HUD.
-                    // We pass the planet data (name, description, temp) to the UI Manager
+                    // Transition Complete! Show the Data HUD.
                     this.uiManager.showPlanetInfo(this.focusedPlanet.data);
                 }
             } else {
@@ -219,9 +222,9 @@ export class InputManager {
         }
     }
 
-    showTooltip(text) {
+    showTooltip(htmlContent) {
         this.tooltip.style.display = 'block';
-        this.tooltip.innerHTML = text;
+        this.tooltip.innerHTML = htmlContent;
     }
 
     hideTooltip() {

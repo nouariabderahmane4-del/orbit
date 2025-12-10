@@ -6,7 +6,7 @@ import { GuiManager } from './systems/GuiManager.js';
 import { StarField } from './entities/StarField.js';
 import { UIManager } from './systems/UIManager.js';
 import { Spaceship } from './entities/Spaceship.js';
-import * as THREE from 'three'; // Import THREE for Vector3
+import * as THREE from 'three';
 
 const engine = new SceneSetup('scene-container');
 const uiManager = new UIManager();
@@ -44,7 +44,8 @@ uiManager.setSearchCallback((query) => {
     else alert(`Planet "${query}" not found!`);
 });
 
-const guiManager = new GuiManager(planets);
+// --- FIX: PASS SCENE TO GUI MANAGER ---
+const guiManager = new GuiManager(planets, engine.scene);
 
 // --- TOGGLE LOGIC ---
 const gamemodeBtn = document.getElementById('gamemode-btn');
@@ -54,40 +55,30 @@ const modal = document.getElementById('ship-modal');
 gamemodeBtn.addEventListener('click', () => {
     isShipMode = !isShipMode;
     if (isShipMode) {
-        // --- ENTER SPACESHIP MODE ---
         inputManager.controls.enabled = false;
         uiManager.hidePlanetInfo();
 
-        // 1. UPDATE UI
         gamemodeBtn.textContent = "EXIT SPACESHIP";
         gamemodeBtn.classList.add('active');
         customizeBtn.style.display = 'none';
         modal.classList.remove('open');
 
-        // 2. RESET SHIP PHYSICS (The Fix)
-        spaceship.velocity.set(0, 0, 0); // Stop moving
-        spaceship.position.set(0, 50, 100); // Reset Position
-        spaceship.mesh.position.copy(spaceship.position); // Sync mesh
-
-        // 3. FORCE LOOK AT SUN
+        spaceship.velocity.set(0, 0, 0);
+        spaceship.position.set(0, 50, 100);
+        spaceship.mesh.position.copy(spaceship.position);
         spaceship.mesh.lookAt(0, 0, 0);
 
     } else {
-        // --- EXIT TO ORBIT MODE ---
         inputManager.controls.enabled = true;
-
-        // Reset Camera for Orbit Mode
         engine.camera.position.set(0, 60, 140);
         engine.camera.lookAt(0, 0, 0);
 
-        // Update UI
         gamemodeBtn.textContent = "ENTER SPACESHIP";
         gamemodeBtn.classList.remove('active');
         customizeBtn.style.display = 'block';
     }
 });
 
-// --- CUSTOMIZE LOGIC ---
 customizeBtn.addEventListener('click', () => {
     modal.classList.add('open');
 });

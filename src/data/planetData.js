@@ -6,7 +6,7 @@ export const planetData = [
         distance: 10,
         speed: 0.04,
         texture: "./public/textures/mercury.jpg",
-        description: "The smallest planet in our solar system and closest to the Sun—is only slightly larger than Earth's Moon.",
+        description: "The smallest planet in our solar system and closest to the Sun.",
         details: { mass: "0.330 x 10^24 kg", temp: "167 °C", gravity: "3.7 m/s²" }
     },
     {
@@ -17,7 +17,7 @@ export const planetData = [
         speed: 0.02,
         texture: "./public/textures/venus.jpg",
         atmosphere: { color: 0xFFA500, opacity: 0.6 },
-        description: "Spinning in the opposite direction to most planets, Venus is the hottest planet, with temperatures hot enough to melt lead.",
+        description: "Spinning in the opposite direction to most planets, Venus is the hottest planet.",
         details: { mass: "4.87 x 10^24 kg", temp: "464 °C", gravity: "8.87 m/s²" }
     },
     {
@@ -29,8 +29,12 @@ export const planetData = [
         texture: "./public/textures/earth.jpg",
         clouds: "./public/textures/earth_clouds.png",
         atmosphere: { color: 0x00aaff, opacity: 0.4 },
-        description: "Our home planet is the only place we know of so far that’s inhabited by living things. It's also the only planet with liquid water on the surface.",
-        details: { mass: "5.97 x 10^24 kg", temp: "15 °C", gravity: "9.8 m/s²" }
+        description: "Our home planet is the only place we know of so far that’s inhabited by living things.",
+        details: { mass: "5.97 x 10^24 kg", temp: "15 °C", gravity: "9.8 m/s²" },
+        // --- NEW: MOONS ---
+        moons: [
+            { name: "Moon", size: 0.45, distance: 3, speed: 0.05, color: 0xcccccc }
+        ]
     },
     {
         name: "Mars",
@@ -40,8 +44,13 @@ export const planetData = [
         speed: 0.01,
         texture: "./public/textures/mars.jpg",
         atmosphere: { color: 0xff5500, opacity: 0.2 },
-        description: "Mars is a dusty, cold, desert world with a very thin atmosphere. There is strong evidence that Mars was—billions of years ago—wetter and warmer.",
-        details: { mass: "0.642 x 10^24 kg", temp: "-65 °C", gravity: "3.71 m/s²" }
+        description: "Mars is a dusty, cold, desert world with a very thin atmosphere.",
+        details: { mass: "0.642 x 10^24 kg", temp: "-65 °C", gravity: "3.71 m/s²" },
+        // --- NEW: MOONS ---
+        moons: [
+            { name: "Phobos", size: 0.1, distance: 2.0, speed: 0.08, color: 0x888888 },
+            { name: "Deimos", size: 0.1, distance: 2.5, speed: 0.06, color: 0x999999 }
+        ]
     },
     {
         name: "Jupiter",
@@ -50,8 +59,15 @@ export const planetData = [
         distance: 35,
         speed: 0.005,
         texture: "./public/textures/jupiter.jpg",
-        description: "Jupiter is more than twice as massive as the other planets of our solar system combined. The Great Red Spot is a giant storm bigger than Earth.",
-        details: { mass: "1898 x 10^24 kg", temp: "-110 °C", gravity: "24.79 m/s²" }
+        description: "Jupiter is more than twice as massive as the other planets combined.",
+        details: { mass: "1898 x 10^24 kg", temp: "-110 °C", gravity: "24.79 m/s²" },
+        // --- NEW: MOONS (The Galilean Moons) ---
+        moons: [
+            { name: "Io", size: 0.3, distance: 4.5, speed: 0.06, color: 0xeebb33 },
+            { name: "Europa", size: 0.25, distance: 5.5, speed: 0.05, color: 0xffffff },
+            { name: "Ganymede", size: 0.5, distance: 7.0, speed: 0.04, color: 0x998877 },
+            { name: "Callisto", size: 0.4, distance: 8.5, speed: 0.03, color: 0x666666 }
+        ]
     },
     {
         name: "Saturn",
@@ -60,8 +76,11 @@ export const planetData = [
         distance: 45,
         speed: 0.003,
         texture: "./public/textures/saturn.jpg",
-        description: "Adorned with a dazzling, complex system of icy rings, Saturn is unique in our solar system. The other giant planets have rings, but none are as spectacular.",
-        details: { mass: "568 x 10^24 kg", temp: "-140 °C", gravity: "10.44 m/s²" }
+        description: "Adorned with a dazzling, complex system of icy rings, Saturn is unique.",
+        details: { mass: "568 x 10^24 kg", temp: "-140 °C", gravity: "10.44 m/s²" },
+        moons: [
+            { name: "Titan", size: 0.6, distance: 6, speed: 0.04, color: 0xffcc33 }
+        ]
     },
     {
         name: "Uranus",
@@ -70,7 +89,7 @@ export const planetData = [
         distance: 55,
         speed: 0.002,
         texture: "./public/textures/uranus.jpg",
-        description: "Uranus rotates at a nearly 90-degree angle from the plane of its orbit. This unique tilt makes Uranus appear to spin on its side.",
+        description: "Uranus rotates at a nearly 90-degree angle from the plane of its orbit.",
         details: { mass: "86.8 x 10^24 kg", temp: "-195 °C", gravity: "8.69 m/s²" }
     },
     {
@@ -80,7 +99,7 @@ export const planetData = [
         distance: 65,
         speed: 0.001,
         texture: "./public/textures/neptune.jpg",
-        description: "Neptune is dark, cold and whipped by supersonic winds. It was the first planet located through mathematical calculations.",
+        description: "Neptune is dark, cold and whipped by supersonic winds.",
         details: { mass: "102 x 10^24 kg", temp: "-200 °C", gravity: "11.15 m/s²" }
     }
 ];

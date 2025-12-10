@@ -1,7 +1,6 @@
 import * as THREE from 'three';
 
-// --- GLSL SHADERS (The Science of Atmosphere) ---
-// Vertex Shader: Calculates the normal vector for every pixel
+// --- SHADERS (Unchanged) ---
 const atmosphereVertexShader = `
     varying vec3 vNormal;
     void main() {
@@ -10,8 +9,6 @@ const atmosphereVertexShader = `
     }
 `;
 
-// Fragment Shader: Calculates the "rim lighting" (Fresnel effect)
-// The closer the angle is to the edge (90 degrees), the brighter it gets.
 const atmosphereFragmentShader = `
     varying vec3 vNormal;
     uniform vec3 glowColor;
@@ -28,6 +25,7 @@ export class Planet {
     constructor(data, scene) {
         this.scene = scene;
         this.data = data;
+        this.moons = [];
 
         // 1. Root Container
         this.mesh = new THREE.Group();
@@ -58,38 +56,33 @@ export class Planet {
 
         const geometry = new THREE.SphereGeometry(data.size, 64, 64);
         this.planetMesh = new THREE.Mesh(geometry, material);
-
-        // Add Base Planet to Group
         this.planetMesh.position.x = data.distance;
         this.mesh.add(this.planetMesh);
 
-        // --- NEW: CLOUD LAYER ---
+        // --- CLOUDS ---
         if (data.clouds) {
             const cloudTexture = textureLoader.load(data.clouds);
             cloudTexture.colorSpace = THREE.SRGBColorSpace;
-
-            const cloudGeometry = new THREE.SphereGeometry(data.size * 1.02, 64, 64); // 1.02x larger
+            const cloudGeometry = new THREE.SphereGeometry(data.size * 1.02, 64, 64);
             const cloudMaterial = new THREE.MeshStandardMaterial({
                 map: cloudTexture,
                 transparent: true,
                 opacity: 0.8,
-                blending: THREE.AdditiveBlending, // Makes black parts invisible
+                blending: THREE.AdditiveBlending,
                 side: THREE.DoubleSide
             });
-
             this.cloudMesh = new THREE.Mesh(cloudGeometry, cloudMaterial);
-            this.planetMesh.add(this.cloudMesh); // Add clouds to the planet mesh
+            this.planetMesh.add(this.cloudMesh);
         }
 
-        // --- NEW: ATMOSPHERE GLOW ---
+        // --- ATMOSPHERE ---
         if (data.atmosphere) {
-            const atmosGeometry = new THREE.SphereGeometry(data.size * 1.2, 64, 64); // 1.2x larger
-
+            const atmosGeometry = new THREE.SphereGeometry(data.size * 1.2, 64, 64);
             const atmosMaterial = new THREE.ShaderMaterial({
                 vertexShader: atmosphereVertexShader,
                 fragmentShader: atmosphereFragmentShader,
                 blending: THREE.AdditiveBlending,
-                side: THREE.BackSide, // Render on the back to create a halo effect
+                side: THREE.BackSide,
                 transparent: true,
                 uniforms: {
                     glowColor: { value: new THREE.Color(data.atmosphere.color) },
@@ -97,12 +90,11 @@ export class Planet {
                     intensity: { value: 0.7 }
                 }
             });
-
             this.atmosphereMesh = new THREE.Mesh(atmosGeometry, atmosMaterial);
             this.planetMesh.add(this.atmosphereMesh);
         }
 
-        // --- SATURN RINGS ---
+        // --- RINGS ---
         if (data.name === "Saturn") {
             const innerRadius = data.size * 1.4;
             const outerRadius = data.size * 2.4;
@@ -122,10 +114,46 @@ export class Planet {
             this.planetMesh.rotation.z = 27 * (Math.PI / 180);
         }
 
+        // --- MOONS ---
+        if (data.moons) {
+            data.moons.forEach(moonData => {
+                this.createMoon(moonData);
+            });
+        }
+
         this.scene.add(this.mesh);
 
-        // Orbit Line
-        this.createOrbitLine(data.distance);
+        // FIX: Track orbit line so we can delete it later
+        this.orbitLine = this.createOrbitLine(data.distance);
+    }
+
+    createMoon(moonData) {
+        const moonPivot = new THREE.Object3D();
+        this.planetMesh.add(moonPivot);
+
+        const geometry = new THREE.SphereGeometry(moonData.size, 32, 32);
+        const material = new THREE.MeshStandardMaterial({
+            color: moonData.color,
+            roughness: 0.9
+        });
+        const moonMesh = new THREE.Mesh(geometry, material);
+        moonMesh.position.x = moonData.distance;
+        moonPivot.add(moonMesh);
+
+        this.moons.push({
+            mesh: moonMesh,
+            pivot: moonPivot,
+            speed: moonData.speed
+        });
+
+        // Mini orbit line for moon
+        const orbitCurve = new THREE.EllipseCurve(0, 0, moonData.distance, moonData.distance, 0, 2 * Math.PI);
+        const points = orbitCurve.getPoints(64);
+        const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
+        const orbitMat = new THREE.LineBasicMaterial({ color: 0xffffff, transparent: true, opacity: 0.1 });
+        const orbitLine = new THREE.LineLoop(orbitGeo, orbitMat);
+        orbitLine.rotation.x = -Math.PI / 2;
+        this.planetMesh.add(orbitLine);
     }
 
     createOrbitLine(radius) {
@@ -140,18 +168,33 @@ export class Planet {
         const orbitLine = new THREE.LineLoop(geometry, material);
         orbitLine.rotation.x = -Math.PI / 2;
         this.scene.add(orbitLine);
+        return orbitLine; // Return reference
+    }
+
+    // --- NEW: CLEANUP METHOD ---
+    dispose() {
+        // Remove main mesh group
+        this.scene.remove(this.mesh);
+
+        // Remove orbit line
+        if (this.orbitLine) {
+            this.scene.remove(this.orbitLine);
+        }
+
+        // (Optional: You could traverse and dispose geometries/materials here for memory safety, 
+        // but for a simple app, removing from scene is sufficient)
     }
 
     update(timeScale = 1) {
-        // Orbit
         this.mesh.rotation.y += this.data.speed * timeScale;
-
-        // Planet Spin
         this.planetMesh.rotation.y += 0.005 * timeScale;
 
-        // Clouds Spin (Slightly faster than planet for parallax effect)
         if (this.cloudMesh) {
             this.cloudMesh.rotation.y += 0.002 * timeScale;
         }
+
+        this.moons.forEach(moon => {
+            moon.pivot.rotation.y += moon.speed * timeScale;
+        });
     }
 }
