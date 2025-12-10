@@ -27,6 +27,9 @@ export class InputManager {
         this.isTransitioning = false;
         this.tooltip = document.getElementById('tooltip');
 
+        // We need to store the planets list to use it inside the click handler
+        this.currentPlanets = [];
+
         // Drag Tracking
         this.dragStartX = 0;
         this.dragStartY = 0;
@@ -54,14 +57,13 @@ export class InputManager {
     }
 
     onMouseUp(event) {
-        // Calculate drag distance
         const distMoved = Math.sqrt(
             Math.pow(event.clientX - this.dragStartX, 2) +
             Math.pow(event.clientY - this.dragStartY, 2)
         );
         const timeElapsed = Date.now() - this.dragStartTime;
 
-        // If moved < 5px and held < 300ms, it's a CLICK
+        // Strict Click Definition: minimal movement, short time
         const isClick = distMoved < 5 && timeElapsed < 300;
 
         if (isClick) {
@@ -69,11 +71,30 @@ export class InputManager {
         }
     }
 
+    // --- THE FIX: FRESH RAYCAST ON CLICK ---
     handleActualClick() {
-        if (this.hoveredPlanet) {
-            this.focusOnPlanet(this.hoveredPlanet);
+        // 1. Force the camera to be mathematically accurate right now
+        this.camera.updateMatrixWorld();
+
+        // 2. Setup Raycaster based on CURRENT mouse position
+        this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        // 3. Get meshes from the stored planets list
+        const planetMeshes = this.currentPlanets.map(p => p.planetMesh);
+
+        // 4. Check intersections INSTANTLY
+        const intersects = this.raycaster.intersectObjects(planetMeshes, true);
+
+        if (intersects.length > 0) {
+            // We hit something! Find out which planet it belongs to.
+            const hitObject = intersects[0].object;
+            const targetPlanet = this.findPlanetFromMesh(hitObject, this.currentPlanets);
+
+            if (targetPlanet) {
+                this.focusOnPlanet(targetPlanet);
+            }
         } else {
-            // Only reset if we truly clicked empty space
+            // We truly hit nothing (Empty Space). NOW we can reset.
             this.resetFocus();
         }
     }
@@ -105,11 +126,11 @@ export class InputManager {
     }
 
     findPlanetFromMesh(hitObject, planets) {
-        // Direct Hit?
+        // 1. Direct Hit
         let found = planets.find(p => p.planetMesh === hitObject);
         if (found) return found;
 
-        // Child Hit (Clouds/Atmosphere/Rings)? Walk up tree.
+        // 2. Child Hit (Cloud/Atmosphere/Ring) -> Walk up parent tree
         let current = hitObject.parent;
         while (current) {
             found = planets.find(p => p.planetMesh === current);
@@ -120,14 +141,14 @@ export class InputManager {
     }
 
     update(planets) {
-        // --- 1. PREPARE RAYCASTER ---
-        // CRITICAL FIX: Force update the camera matrix so raycasting is accurate
+        // STORE PLANETS FOR THE CLICK HANDLER
+        this.currentPlanets = planets;
+
+        // --- 1. Hover Logic (Visual Only) ---
         this.camera.updateMatrixWorld();
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
         const planetMeshes = planets.map(p => p.planetMesh);
-
-        // Recursive = true to hit clouds/rings/atmosphere
         const intersects = this.raycaster.intersectObjects(planetMeshes, true);
 
         if (intersects.length > 0) {
@@ -144,7 +165,7 @@ export class InputManager {
             document.body.style.cursor = 'default';
         }
 
-        // --- 2. UPDATE CONTROLS & CAMERA ---
+        // --- 2. Camera & Control Logic ---
         this.controls.update();
 
         if (this.focusedPlanet) {
@@ -164,10 +185,10 @@ export class InputManager {
                 if (this.camera.position.distanceTo(idealPos) < 1.0) {
                     this.isTransitioning = false;
 
-                    // LOCK ON: Parent Camera to Rig
+                    // Lock On
                     this.cameraRig.position.copy(planetPos);
                     this.cameraRig.attach(this.camera);
-                    this.controls.target.set(0, 0, 0); // Target center of Rig
+                    this.controls.target.set(0, 0, 0);
                     this.controls.saveState();
                 }
             }
