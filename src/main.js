@@ -17,22 +17,35 @@ const starField = new StarField(engine.scene, 5000);
 const spaceship = new Spaceship(engine.scene, engine.camera);
 let isShipMode = false;
 
-const planets = [];
-const sun = new Planet({
-    name: "Sun",
-    size: 6.6825,
-    distance: 0,
-    speed: 0,
-    texture: "./public/textures/sun.jpg",
-    color: 0xFFFF00,
-    description: "The Star.",
-    details: { mass: "1.989 x 10^30 kg", temp: "5500 °C", gravity: "274 m/s²" }
-}, engine.scene);
-planets.push(sun);
+// Function to initialize planets (for use in reset)
+function initializePlanets(planetsArray, scene) {
+    // 1. Clear array contents
+    planetsArray.length = 0;
 
-planetData.forEach(data => {
-    planets.push(new Planet(data, engine.scene));
-});
+    // 2. Create Sun
+    const sun = new Planet({
+        name: "Sun",
+        size: 6.6825,
+        distance: 0,
+        speed: 0,
+        texture: "./public/textures/sun.jpg",
+        color: 0xFFFF00,
+        description: "The Star.",
+        details: { mass: "1.989 x 10^30 kg", temp: "5500 °C", gravity: "274 m/s²" }
+    }, scene);
+    planetsArray.push(sun);
+
+    // 3. Create Default Planets
+    planetData.forEach(data => {
+        planetsArray.push(new Planet(data, scene));
+    });
+
+    return sun;
+}
+
+const planets = [];
+const initialSun = initializePlanets(planets, engine.scene);
+// Note: initializePlanets is now in main.js for easy resetting
 
 uiManager.setSearchCallback((query) => {
     if (isShipMode) {
@@ -44,8 +57,41 @@ uiManager.setSearchCallback((query) => {
     else alert(`Planet "${query}" not found!`);
 });
 
-// --- FIX: PASS SCENE TO GUI MANAGER ---
 const guiManager = new GuiManager(planets, engine.scene);
+
+// --- OVERRIDE GUI MANAGER RESET TO HANDLE CAMERA/SHIP STATE ---
+guiManager.resetSystem = () => {
+    // 1. Delete all existing planets (except Sun)
+    // We start from the back to delete user-added planets first.
+    for (let i = planets.length - 1; i > 0; i--) {
+        const planet = planets[i];
+
+        // Scene Cleanup
+        planet.dispose();
+
+        // Remove UI Folder
+        const folder = guiManager.gui.folders.find(f => f._title === planet.data.name);
+        if (folder) {
+            folder.destroy();
+        }
+
+        // Remove from array
+        planets.splice(i, 1);
+    }
+
+    // 2. Reset Camera to Overview
+    inputManager.resetFocus();
+
+    // 3. Optional: Reset Ship position if in orbit mode
+    if (!isShipMode) {
+        engine.camera.position.set(0, 60, 140);
+        engine.camera.lookAt(0, 0, 0);
+    }
+
+    // 4. Clean up any lingering focus/UI states
+    uiManager.hidePlanetInfo();
+};
+
 
 // --- TOGGLE LOGIC ---
 const gamemodeBtn = document.getElementById('gamemode-btn');
