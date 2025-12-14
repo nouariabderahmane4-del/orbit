@@ -7,7 +7,18 @@ import { StarField } from './entities/StarField.js';
 import { UIManager } from './systems/UIManager.js';
 import { Spaceship } from './entities/Spaceship.js';
 import * as THREE from 'three';
+// CRITICAL: Import the CSS2DRenderer
+import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 
+// --- NEW: INITIALIZE CSS 2D RENDERER ---
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.setSize(window.innerWidth, window.innerHeight);
+labelRenderer.domElement.style.position = 'absolute';
+labelRenderer.domElement.style.top = '0px';
+labelRenderer.domElement.style.pointerEvents = 'none'; // So you can still click the canvas underneath
+document.body.appendChild(labelRenderer.domElement);
+
+// --- SCENE SETUP (Rest of main.js remains the same) ---
 const engine = new SceneSetup('scene-container');
 const uiManager = new UIManager();
 const inputManager = new InputManager(engine.camera, engine.scene, engine.renderer, uiManager);
@@ -54,39 +65,27 @@ uiManager.setSearchCallback((query) => {
 
 const guiManager = new GuiManager(planets, engine.scene);
 
-// --- OVERRIDE GUI MANAGER RESET: FIX APPLIED HERE ---
+// OVERRIDE GUI MANAGER RESET
 guiManager.resetSystem = () => {
-    // 1. SCENE CLEANUP: Delete ALL planets (except the Sun), and their GUI folders
     for (let i = planets.length - 1; i > 0; i--) {
         const planet = planets[i];
 
-        // Scene Cleanup
         planet.dispose();
 
-        // Remove UI Folder
         const folder = guiManager.gui.folders.find(f => f._title === planet.data.name);
         if (folder) {
             folder.destroy();
         }
 
-        // Remove from array (keeps the Sun at index 0)
         planets.splice(i, 1);
     }
 
-    // 2. RE-CREATE DEFAULT SOLAR SYSTEM
-    // The planets array now only contains the Sun. We re-add Mercury through Neptune.
     planetData.forEach(data => {
-        // A. Create the new 3D object
         const newPlanet = new Planet(data, engine.scene);
-
-        // B. Add to our tracking array
         planets.push(newPlanet);
-
-        // C. CRITICAL FIX: Re-add their GUI folders so they reappear in the Controls menu
         guiManager.addPlanetFolder(newPlanet);
     });
 
-    // 3. UI/CAMERA RESET
     inputManager.resetFocus();
     uiManager.hidePlanetInfo();
 
@@ -105,7 +104,6 @@ const modal = document.getElementById('ship-modal');
 gamemodeBtn.addEventListener('click', () => {
     isShipMode = !isShipMode;
     if (isShipMode) {
-        // --- ENTER SPACESHIP MODE ---
         inputManager.controls.enabled = false;
         uiManager.hidePlanetInfo();
 
@@ -122,7 +120,6 @@ gamemodeBtn.addEventListener('click', () => {
         spaceship.mesh.lookAt(0, 0, 0);
 
     } else {
-        // --- EXIT TO ORBIT MODE ---
         inputManager.controls.enabled = true;
 
         spaceship.mesh.visible = false;
@@ -156,6 +153,15 @@ function animate() {
         inputManager.update(planets);
     }
     engine.render();
+    // CRITICAL: Render the CSS labels every frame
+    labelRenderer.render(engine.scene, engine.camera);
 }
+
+// CRITICAL: Handle resize for the new renderer
+window.addEventListener('resize', () => {
+    // Engine resize is handled inside SceneSetup
+    labelRenderer.setSize(window.innerWidth, window.innerHeight);
+});
+
 
 animate();

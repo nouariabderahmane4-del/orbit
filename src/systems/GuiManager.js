@@ -11,7 +11,7 @@ export class GuiManager {
 
         // --- 1. GLOBAL SPEED CONTROLS ---
         this.params = {
-            timeScale: 1.0,
+            timeScale: 0.4,
             stop: () => { this.params.timeScale = 0; },
             play: () => { this.params.timeScale = 1.0; },
             reset: () => this.resetSystem() // <--- NEW RESET FUNCTION

@@ -25,10 +25,11 @@ export class InputManager {
 
         // 3. State
         this.focusedPlanet = null;
+        this.hoveredPlanet = null; // NEW: Track currently hovered planet
+        this.lastHoveredPlanet = null; // NEW: Track last hovered planet for cleanup
         this.isTransitioning = false;
         this.tooltip = document.getElementById('tooltip');
 
-        // We need to store the planets list to use it inside the click handler
         this.currentPlanets = [];
 
         // Drag Tracking
@@ -73,20 +74,12 @@ export class InputManager {
     }
 
     handleActualClick() {
-        // 1. Force the camera to be mathematically accurate right now
         this.camera.updateMatrixWorld();
-
-        // 2. Setup Raycaster based on CURRENT mouse position
         this.raycaster.setFromCamera(this.mouse, this.camera);
-
-        // 3. Get meshes from the stored planets list
         const planetMeshes = this.currentPlanets.map(p => p.planetMesh);
-
-        // 4. Check intersections INSTANTLY
         const intersects = this.raycaster.intersectObjects(planetMeshes, true);
 
         if (intersects.length > 0) {
-            // We hit something! Find out which planet it belongs to.
             const hitObject = intersects[0].object;
             const targetPlanet = this.findPlanetFromMesh(hitObject, this.currentPlanets);
 
@@ -99,22 +92,17 @@ export class InputManager {
     resetFocus() {
         if (!this.focusedPlanet) return;
 
-        // Hide the UI when we leave a planet
         this.uiManager.hidePlanetInfo();
-
-        // Ensure camera is attached to scene (Safety check)
         this.scene.attach(this.camera);
 
         const planetWorldPos = new THREE.Vector3();
         this.focusedPlanet.planetMesh.getWorldPosition(planetWorldPos);
 
-        // When we reset, we start looking from where the planet WAS
         this.controls.target.copy(planetWorldPos);
 
         this.focusedPlanet = null;
         this.isTransitioning = true;
 
-        // Target position: Back to looking at the whole system
         this.targetCameraPos = new THREE.Vector3(0, 60, 140);
     }
 
@@ -130,11 +118,9 @@ export class InputManager {
     }
 
     findPlanetFromMesh(hitObject, planets) {
-        // 1. Direct Hit
         let found = planets.find(p => p.planetMesh === hitObject);
         if (found) return found;
 
-        // 2. Child Hit (Cloud/Atmosphere/Ring) -> Walk up parent tree
         let current = hitObject.parent;
         while (current) {
             found = planets.find(p => p.planetMesh === current);
@@ -145,7 +131,6 @@ export class InputManager {
     }
 
     update(planets) {
-        // STORE PLANETS FOR THE CLICK HANDLER
         this.currentPlanets = planets;
 
         // --- 1. Hover Logic (Visual Only) ---
@@ -155,12 +140,15 @@ export class InputManager {
         const planetMeshes = planets.map(p => p.planetMesh);
         const intersects = this.raycaster.intersectObjects(planetMeshes, true);
 
+        // Reset hover state
+        this.hoveredPlanet = null;
+
         if (intersects.length > 0) {
             const hitObject = intersects[0].object;
             this.hoveredPlanet = this.findPlanetFromMesh(hitObject, planets);
 
             if (this.hoveredPlanet) {
-                // --- FIX: UPDATED TOOLTIP CONTENT TO MATCH REQUIREMENTS ---
+                // Show standard tooltip
                 const d = this.hoveredPlanet.data;
                 const tooltipHTML = `
                     <div style="text-align: left; line-height: 1.4;">
@@ -173,12 +161,27 @@ export class InputManager {
                 document.body.style.cursor = 'pointer';
             }
         } else {
-            this.hoveredPlanet = null;
             this.hideTooltip();
             document.body.style.cursor = 'default';
         }
 
-        // --- 2. Camera & Control Logic ---
+        // --- 2. Moon Label Visibility Toggle ---
+        if (this.hoveredPlanet !== this.lastHoveredPlanet) {
+            // A. Hide labels on the previous planet
+            if (this.lastHoveredPlanet) {
+                this.lastHoveredPlanet.hideMoonLabels();
+            }
+
+            // B. Show labels on the current planet
+            if (this.hoveredPlanet) {
+                this.hoveredPlanet.showMoonLabels();
+            }
+
+            this.lastHoveredPlanet = this.hoveredPlanet;
+        }
+
+
+        // --- 3. Camera & Control Logic (Unchanged) ---
         this.controls.update();
 
         if (this.focusedPlanet) {
@@ -186,31 +189,20 @@ export class InputManager {
             this.focusedPlanet.planetMesh.getWorldPosition(planetPos);
 
             if (this.isTransitioning) {
-                // Calculate ideal offset based on planet size
                 const offset = this.focusedPlanet.data.size * 4 + 5;
                 const idealPos = new THREE.Vector3(0, offset * 0.5, offset).add(planetPos);
 
-                // Smoothly move Camera
                 this.camera.position.lerp(idealPos, 0.1);
-
-                // Smoothly move Focus Target
                 this.controls.target.lerp(planetPos, 0.1);
 
-                // Check if we are close enough to stop "Transitioning"
                 if (this.camera.position.distanceTo(idealPos) < 4.0) {
                     this.isTransitioning = false;
-
-                    // Transition Complete! Show the Data HUD.
                     this.uiManager.showPlanetInfo(this.focusedPlanet.data);
                 }
             } else {
-                // LOCKED STATE:
-                // We are not transitioning, but we must keep the target on the planet
                 this.controls.target.copy(planetPos);
             }
         } else {
-            // NO PLANET FOCUSED (Overview Mode)
-            // Gently bring the target back to the center (Sun)
             this.controls.target.lerp(new THREE.Vector3(0, 0, 0), 0.1);
 
             if (this.isTransitioning) {

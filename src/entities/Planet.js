@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
 
 // --- SHADERS (Unchanged) ---
 const atmosphereVertexShader = `
@@ -26,6 +27,7 @@ export class Planet {
         this.scene = scene;
         this.data = data;
         this.moons = [];
+        this.moonLabels = []; // NEW: Array to store references to CSS2DObjects
 
         // 1. Root Container
         this.mesh = new THREE.Group();
@@ -140,6 +142,19 @@ export class Planet {
         moonMesh.position.x = moonData.distance;
         moonPivot.add(moonMesh);
 
+        // --- CREATE MOON LABEL ---
+        const moonDiv = document.createElement('div');
+        moonDiv.className = 'moon-label';
+        moonDiv.textContent = moonData.name;
+
+        const moonLabel = new CSS2DObject(moonDiv);
+        moonLabel.position.set(0, moonData.size + 0.5, 0);
+        moonMesh.add(moonLabel);
+
+        // CRITICAL: Hide label by default
+        moonLabel.visible = false;
+        this.moonLabels.push(moonLabel); // Store label reference
+
         this.moons.push({
             mesh: moonMesh,
             pivot: moonPivot,
@@ -168,21 +183,25 @@ export class Planet {
         const orbitLine = new THREE.LineLoop(geometry, material);
         orbitLine.rotation.x = -Math.PI / 2;
         this.scene.add(orbitLine);
-        return orbitLine; // Return reference
+        return orbitLine;
     }
 
-    // --- NEW: CLEANUP METHOD ---
+    // --- NEW: TOGGLE METHODS ---
+    showMoonLabels() {
+        this.moonLabels.forEach(label => label.visible = true);
+    }
+
+    hideMoonLabels() {
+        this.moonLabels.forEach(label => label.visible = false);
+    }
+
+    // --- CLEANUP METHOD ---
     dispose() {
-        // Remove main mesh group
         this.scene.remove(this.mesh);
 
-        // Remove orbit line
         if (this.orbitLine) {
             this.scene.remove(this.orbitLine);
         }
-
-        // (Optional: You could traverse and dispose geometries/materials here for memory safety, 
-        // but for a simple app, removing from scene is sufficient)
     }
 
     update(timeScale = 1) {
