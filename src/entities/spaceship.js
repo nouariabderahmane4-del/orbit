@@ -5,26 +5,31 @@ export class Spaceship {
         this.scene = scene;
         this.camera = camera;
 
-        // Physics State
+        // --- PHYSICS STATE ---
+        // "Where am I and how fast am I going?"
         this.position = new THREE.Vector3(0, 50, 100);
         this.velocity = new THREE.Vector3(0, 0, 0);
 
-        // Default Stats
+        // --- DEFAULT STATS ---
+        // These will be overwritten as soon as we pick a ship type below
         this.maxSpeed = 1.0;
-        this.acceleration = 0.02;
-        this.turnSpeed = 0.04; // Slightly faster turning for smaller ships
-        this.friction = 0.95;
+        this.acceleration = 0.02; // How fast we speed up
+        this.turnSpeed = 0.04;
+        this.friction = 0.95; // Air resistance (slows us down when we let go of W)
 
-        // Visuals
+        // --- VISUALS ---
         this.currentType = 1;
-        this.mesh = new THREE.Group();
+        this.mesh = new THREE.Group(); // The container for our ship parts
         this.scene.add(this.mesh);
 
-        // Build Initial Ship
+        // Build the default ship immediately so the scene isn't empty
         this.setShipType(1);
 
-        // Input
+        // --- INPUT STATE ---
+        // We keep track of which keys are currently held down
         this.keys = { thrust: false, brake: false, yawLeft: false, yawRight: false, pitchUp: false, pitchDown: false };
+
+        // Listen for key presses
         window.addEventListener('keydown', (e) => this.onKeyDown(e));
         window.addEventListener('keyup', (e) => this.onKeyUp(e));
     }
@@ -32,30 +37,34 @@ export class Spaceship {
     setShipType(typeIndex) {
         this.currentType = typeIndex;
 
-        // 1. Clear old mesh
+        // 1. CLEAR OLD MESH
+        // We loop through children and remove them one by one until the group is empty
         while (this.mesh.children.length > 0) {
             this.mesh.remove(this.mesh.children[0]);
         }
 
-        // 2. Build new mesh & Set Stats
+        // 2. BUILD NEW MESH & SET STATS
         let shipGeo;
 
         if (typeIndex === 0) {
             // --- RETRO ROCKET ---
+            // Fast top speed, but slippery handling
             this.maxSpeed = 2.0;
             this.acceleration = 0.05;
             this.turnSpeed = 0.04;
-            this.friction = 0.98;
+            this.friction = 0.98; // Low friction = lots of drifting
             shipGeo = this.buildRocket();
         } else if (typeIndex === 2) {
             // --- ALIEN UFO ---
+            // Slower, but turns incredibly fast
             this.maxSpeed = 1.5;
             this.acceleration = 0.03;
             this.turnSpeed = 0.07;
-            this.friction = 0.94;
+            this.friction = 0.94; // High friction = stops quickly
             shipGeo = this.buildUFO();
         } else {
-            // --- CYBER SPEEDER ---
+            // --- CYBER SPEEDER (Default) ---
+            // Balanced stats
             this.maxSpeed = 1.8;
             this.acceleration = 0.04;
             this.turnSpeed = 0.05;
@@ -63,13 +72,15 @@ export class Spaceship {
             shipGeo = this.buildSpeeder();
         }
 
+        // Add the new shape to our main group
         this.mesh.add(shipGeo);
 
-        // Force ship to look at the Sun immediately
+        // Force ship to look at the Sun (0,0,0) immediately on spawn
         this.mesh.lookAt(0, 0, 0);
     }
 
     // --- SHIP BUILDERS (SCALED TO 50%) ---
+    // These functions use Three.js geometry (Cylinders, Boxes) to "draw" the ships code-side.
 
     buildRocket() {
         const group = new THREE.Group();
@@ -266,12 +277,13 @@ export class Spaceship {
     }
 
     onKeyDown(event) {
+        // Prevent default scrolling for Space/Arrows so the page doesn't bounce around
         if (["Space", "ArrowUp", "ArrowDown", "ArrowLeft", "ArrowRight"].indexOf(event.code) > -1) {
             event.preventDefault();
         }
         switch (event.code) {
-            case 'KeyW': this.keys.thrust = true; break;
-            case 'KeyS': this.keys.brake = true; break;
+            case 'KeyW': this.keys.thrust = true; break; // Go
+            case 'KeyS': this.keys.brake = true; break;  // Stop
             case 'ArrowLeft': this.keys.yawLeft = true; break;
             case 'ArrowRight': this.keys.yawRight = true; break;
             case 'ArrowUp': this.keys.pitchUp = true; break;
@@ -280,6 +292,7 @@ export class Spaceship {
     }
 
     onKeyUp(event) {
+        // Stop the action when the key is released
         switch (event.code) {
             case 'KeyW': this.keys.thrust = false; break;
             case 'KeyS': this.keys.brake = false; break;
@@ -291,13 +304,18 @@ export class Spaceship {
     }
 
     update() {
+        // 1. ROTATION LOGIC
+        // Adjust the rotation of the 3D mesh based on keys pressed
         if (this.keys.yawLeft) this.mesh.rotation.y += this.turnSpeed;
         if (this.keys.yawRight) this.mesh.rotation.y -= this.turnSpeed;
         if (this.keys.pitchUp) this.mesh.rotation.x -= this.turnSpeed;
         if (this.keys.pitchDown) this.mesh.rotation.x += this.turnSpeed;
 
+        // 2. CALCULATE FORWARD
+        // We need to know which way "Forward" is relative to the ship's current rotation
         const forwardDir = new THREE.Vector3(0, 0, 1).applyQuaternion(this.mesh.quaternion);
 
+        // 3. ACCELERATION
         if (this.keys.thrust) {
             this.velocity.add(forwardDir.multiplyScalar(this.acceleration));
         }
@@ -305,16 +323,30 @@ export class Spaceship {
             this.velocity.sub(forwardDir.multiplyScalar(this.acceleration * 0.5));
         }
 
+        // 4. CAP SPEED
+        // Ensure we don't accelerate to infinity
         this.velocity.clampLength(0, this.maxSpeed);
+
+        // 5. APPLY PHYSICS
         this.position.add(this.velocity);
         this.mesh.position.copy(this.position);
+
+        // 6. FRICTION
+        // Constantly multiply velocity by 0.95 so the ship slows down if you stop pressing W
         this.velocity.multiplyScalar(this.friction);
 
-        // --- CAMERA ADJUSTMENT ---
-        // Moved much closer (z: -7 instead of -12) to match the 0.5x ship size
+        // --- CAMERA FOLLOW LOGIC ---
+        // Calculate where the camera should be:
+        // (0, 2.5, -7) means "Up 2.5 units" and "Behind 7 units" relative to the ship
         const relativeCameraOffset = new THREE.Vector3(0, 2.5, -7);
+
+        // Convert that relative offset to world coordinates
         const cameraOffset = relativeCameraOffset.applyMatrix4(this.mesh.matrixWorld);
+
+        // Smoothly move (Lerp) the camera to that spot
         this.camera.position.lerp(cameraOffset, 0.1);
+
+        // Force the camera to look at the ship's center
         this.camera.lookAt(this.mesh.position);
     }
 }
