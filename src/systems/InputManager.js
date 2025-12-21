@@ -11,11 +11,7 @@ export class InputManager {
         this.raycaster = new THREE.Raycaster();
         this.mouse = new THREE.Vector2();
 
-        // 1. Create the Rig
-        this.cameraRig = new THREE.Object3D();
-        this.scene.add(this.cameraRig);
-
-        // 2. Setup Controls
+        // 1. Setup Controls
         this.controls = new OrbitControls(this.camera, this.renderer.domElement);
         this.controls.enableDamping = true;
         this.controls.dampingFactor = 0.05;
@@ -23,10 +19,10 @@ export class InputManager {
         this.controls.minDistance = 2;
         this.controls.maxDistance = 500;
 
-        // 3. State
+        // 2. State
         this.focusedPlanet = null;
-        this.hoveredPlanet = null; // NEW: Track currently hovered planet
-        this.lastHoveredPlanet = null; // NEW: Track last hovered planet for cleanup
+        this.hoveredPlanet = null;
+        this.lastHoveredPlanet = null;
         this.isTransitioning = false;
         this.tooltip = document.getElementById('tooltip');
 
@@ -37,7 +33,7 @@ export class InputManager {
         this.dragStartY = 0;
         this.dragStartTime = 0;
 
-        // 4. Listeners
+        // 3. Listeners
         window.addEventListener('mousemove', (e) => this.onMouseMove(e));
         window.addEventListener('mousedown', (e) => this.onMouseDown(e));
         window.addEventListener('mouseup', (e) => this.onMouseUp(e));
@@ -65,7 +61,6 @@ export class InputManager {
         );
         const timeElapsed = Date.now() - this.dragStartTime;
 
-        // Strict Click Definition: minimal movement, short time
         const isClick = distMoved < 5 && timeElapsed < 300;
 
         if (isClick) {
@@ -91,18 +86,14 @@ export class InputManager {
 
     resetFocus() {
         if (!this.focusedPlanet) return;
-
         this.uiManager.hidePlanetInfo();
-        this.scene.attach(this.camera);
 
         const planetWorldPos = new THREE.Vector3();
         this.focusedPlanet.planetMesh.getWorldPosition(planetWorldPos);
-
         this.controls.target.copy(planetWorldPos);
 
         this.focusedPlanet = null;
         this.isTransitioning = true;
-
         this.targetCameraPos = new THREE.Vector3(0, 60, 140);
     }
 
@@ -118,9 +109,11 @@ export class InputManager {
     }
 
     findPlanetFromMesh(hitObject, planets) {
+        // First check: Is this literally the planet mesh?
         let found = planets.find(p => p.planetMesh === hitObject);
         if (found) return found;
 
+        // Second check: Is it a child (moon, cloud, atmosphere)? Walk up the tree.
         let current = hitObject.parent;
         while (current) {
             found = planets.find(p => p.planetMesh === current);
@@ -133,14 +126,13 @@ export class InputManager {
     update(planets) {
         this.currentPlanets = planets;
 
-        // --- 1. Hover Logic (Visual Only) ---
+        // --- HOVER LOGIC ---
         this.camera.updateMatrixWorld();
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
         const planetMeshes = planets.map(p => p.planetMesh);
         const intersects = this.raycaster.intersectObjects(planetMeshes, true);
 
-        // Reset hover state
         this.hoveredPlanet = null;
 
         if (intersects.length > 0) {
@@ -148,13 +140,29 @@ export class InputManager {
             this.hoveredPlanet = this.findPlanetFromMesh(hitObject, planets);
 
             if (this.hoveredPlanet) {
-                // Show standard tooltip
-                const d = this.hoveredPlanet.data;
+                // DEFAULT: Show Planet Info
+                let name = this.hoveredPlanet.data.name;
+                let size = this.hoveredPlanet.data.size;
+                let dist = this.hoveredPlanet.data.distance;
+
+                // --- CHECK FOR MOON HOVER (UPDATED) ---
+                if (this.hoveredPlanet.moons) {
+                    // Check if we hit the Visual Mesh OR the Hitbox Mesh
+                    const hitMoon = this.hoveredPlanet.moons.find(m => m.mesh === hitObject || m.hitMesh === hitObject);
+
+                    if (hitMoon) {
+                        name = `Moon: ${hitMoon.data.name}`;
+                        size = hitMoon.data.size;
+                        dist = hitMoon.data.distance;
+                    }
+                }
+
+                // Render Tooltip
                 const tooltipHTML = `
                     <div style="text-align: left; line-height: 1.4;">
-                        <strong style="color: #00aaff; font-size: 14px;">${d.name}</strong><br>
-                        <span style="color: #ccc; font-size: 12px;">Size:</span> ${d.size.toFixed(2)}<br>
-                        <span style="color: #ccc; font-size: 12px;">Distance:</span> ${d.distance}
+                        <strong style="color: #00aaff; font-size: 14px;">${name}</strong><br>
+                        <span style="color: #ccc; font-size: 12px;">Size:</span> ${size.toFixed(2)}<br>
+                        <span style="color: #ccc; font-size: 12px;">Distance:</span> ${dist}
                     </div>
                 `;
                 this.showTooltip(tooltipHTML);
@@ -165,23 +173,14 @@ export class InputManager {
             document.body.style.cursor = 'default';
         }
 
-        // --- 2. Moon Label Visibility Toggle ---
+        // --- LABEL TOGGLING ---
         if (this.hoveredPlanet !== this.lastHoveredPlanet) {
-            // A. Hide labels on the previous planet
-            if (this.lastHoveredPlanet) {
-                this.lastHoveredPlanet.hideMoonLabels();
-            }
-
-            // B. Show labels on the current planet
-            if (this.hoveredPlanet) {
-                this.hoveredPlanet.showMoonLabels();
-            }
-
+            if (this.lastHoveredPlanet) this.lastHoveredPlanet.hideMoonLabels();
+            if (this.hoveredPlanet) this.hoveredPlanet.showMoonLabels();
             this.lastHoveredPlanet = this.hoveredPlanet;
         }
 
-
-        // --- 3. Camera & Control Logic (Unchanged) ---
+        // --- CAMERA ANIMATION ---
         this.controls.update();
 
         if (this.focusedPlanet) {
