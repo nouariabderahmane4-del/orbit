@@ -71,6 +71,8 @@ export class InputManager {
     handleActualClick() {
         this.camera.updateMatrixWorld();
         this.raycaster.setFromCamera(this.mouse, this.camera);
+
+        // Use the planetMeshes for clicking logic (usually we click the planet, not the orbit)
         const planetMeshes = this.currentPlanets.map(p => p.planetMesh);
         const intersects = this.raycaster.intersectObjects(planetMeshes, true);
 
@@ -113,7 +115,11 @@ export class InputManager {
         let found = planets.find(p => p.planetMesh === hitObject);
         if (found) return found;
 
-        // Second check: Is it a child (moon, cloud, atmosphere)? Walk up the tree.
+        // Second check: Is this the Orbit Hitbox?
+        found = planets.find(p => p.orbitHitbox === hitObject);
+        if (found) return found;
+
+        // Third check: Is it a child (moon, cloud, atmosphere)? Walk up the tree.
         let current = hitObject.parent;
         while (current) {
             found = planets.find(p => p.planetMesh === current);
@@ -130,8 +136,14 @@ export class InputManager {
         this.camera.updateMatrixWorld();
         this.raycaster.setFromCamera(this.mouse, this.camera);
 
-        const planetMeshes = planets.map(p => p.planetMesh);
-        const intersects = this.raycaster.intersectObjects(planetMeshes, true);
+        // Collect all objects we want to interact with (Planets AND Orbit Hitboxes)
+        const interactiveObjects = [];
+        planets.forEach(p => {
+            interactiveObjects.push(p.planetMesh);
+            if (p.orbitHitbox) interactiveObjects.push(p.orbitHitbox);
+        });
+
+        const intersects = this.raycaster.intersectObjects(interactiveObjects, true);
 
         this.hoveredPlanet = null;
 
@@ -145,9 +157,9 @@ export class InputManager {
                 let size = this.hoveredPlanet.data.size;
                 let dist = this.hoveredPlanet.data.distance;
 
-                // --- CHECK FOR MOON HOVER (UPDATED) ---
+                // --- CHECK FOR MOON HOVER ---
                 if (this.hoveredPlanet.moons) {
-                    // Check if we hit the Visual Mesh OR the Hitbox Mesh
+                    // Check if we hit the Visual Mesh OR the Hitbox Mesh of a moon
                     const hitMoon = this.hoveredPlanet.moons.find(m => m.mesh === hitObject || m.hitMesh === hitObject);
 
                     if (hitMoon) {

@@ -73,9 +73,9 @@ export class Planet {
             this.planetMesh.add(this.cloudMesh);
         }
 
-        // --- ATMOSPHERE ---
+        // --- ATMOSPHER ---
         if (data.atmosphere) {
-            const atmosGeometry = new THREE.SphereGeometry(data.size * 1.2, 64, 64);
+            const atmosGeometry = new THREE.SphereGeometry(data.size * 1.2, 32, 32);
             const atmosMaterial = new THREE.ShaderMaterial({
                 vertexShader: atmosphereVertexShader,
                 fragmentShader: atmosphereFragmentShader,
@@ -211,6 +211,7 @@ export class Planet {
     }
 
     createOrbitLine(radius) {
+        // 1. Draw the visual thin line
         const orbitShape = new THREE.EllipseCurve(0, 0, radius, radius, 0, 2 * Math.PI);
         const points = orbitShape.getPoints(128);
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -222,6 +223,26 @@ export class Planet {
         const orbitLine = new THREE.LineLoop(geometry, material);
         orbitLine.rotation.x = -Math.PI / 2;
         this.scene.add(orbitLine);
+
+        // --- 2. Add Invisible Hitbox (Torus) ---
+        // Creates a thick invisible ring around the line to make mouse hovering easier
+        // radius: same as orbit radius
+        // tube: thickness of the hit area (e.g., 3 units)
+        const hitGeo = new THREE.TorusGeometry(radius, 3, 16, 100);
+        const hitMat = new THREE.MeshBasicMaterial({
+            visible: false,      // Not visible to the eye
+            transparent: true,   // Transparent for Raycaster
+            opacity: 0,          // Fully invisible
+            depthWrite: false
+        });
+
+        const hitMesh = new THREE.Mesh(hitGeo, hitMat);
+        hitMesh.rotation.x = -Math.PI / 2; // Lay flat to match the orbit line
+        this.scene.add(hitMesh);
+
+        // Save reference to clean up later
+        this.orbitHitbox = hitMesh;
+
         return orbitLine;
     }
 
@@ -234,9 +255,19 @@ export class Planet {
     }
 
     dispose() {
+        // Remove main planet group
         this.scene.remove(this.mesh);
+
+        // Remove visual orbit line
         if (this.orbitLine) {
             this.scene.remove(this.orbitLine);
+        }
+
+        // Remove orbit hitbox and free memory
+        if (this.orbitHitbox) {
+            this.scene.remove(this.orbitHitbox);
+            this.orbitHitbox.geometry.dispose();
+            this.orbitHitbox.material.dispose();
         }
     }
 
