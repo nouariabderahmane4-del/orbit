@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orbit: Solar System</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background-color: #000;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    /* --- CUSTOM THEME FOR CONTROL PANEL (LIL-GUI) --- */
+    .lil-gui {
+      --background-color: rgba(0, 0, 0, 0.7);
+      --text-color: #ffffff;
+      --title-background-color: rgba(0, 170, 255, 0.2);
+      --widget-color: rgba(255, 255, 255, 0.1);
+      --hover-color: rgba(255, 255, 255, 0.2);
+      --focus-color: rgba(0, 170, 255, 0.6);
+      --number-color: #00aaff;
+      --string-color: #00aaff;
+      font-size: 13px;
+    }
+
+    .lil-gui.root {
+      position: absolute;
+      top: 100px;
+      left: 20px;
+      right: auto !important;
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      backdrop-filter: blur(12px);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    .lil-gui .title {
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    /* --- UI ELEMENTS --- */
+    #tooltip {
+      position: absolute;
+      background: rgba(0, 0, 0, 0.8);
+      color: white;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-size: 14px;
+      pointer-events: none;
+      display: none;
+      top: 0;
+      left: 0;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      white-space: nowrap;
+      z-index: 10;
+    }
+
+    .moon-label {
+      color: rgba(255, 255, 255, 0.7);
+      background: rgba(0, 0, 0, 0.4);
+      padding: 2px 5px;
+      border-radius: 3px;
+      font-size: 10px;
+      /* Small font size for moons */
+      text-shadow: 0 0 4px #000;
+      pointer-events: none;
+    }
+
+    /* --- INFO HUD --- */
+    #info-panel {
+      position: absolute;
+      top: 0;
+      right: -450px;
+      width: 350px;
+      height: 100%;
+      background: rgba(10, 15, 30, 0.85);
+      backdrop-filter: blur(12px);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      color: white;
+      padding: 40px;
+      box-sizing: border-box;
+      transition: right 0.5s cubic-bezier(0.19, 1, 0.22, 1);
+      display: flex;
+      flex-direction: column;
+      z-index: 20;
+    }
+
+    #info-panel.active {
+      right: 0;
+    }
+
+    #info-panel h1 {
+      margin-top: 50px;
+      font-size: 38px;
+      border-bottom: 2px solid #00aaff;
+      padding-bottom: 15px;
+      margin-bottom: 20px;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      font-weight: 300;
+    }
+
+    #info-panel p {
+      line-height: 1.8;
+      font-size: 16px;
+      color: #ccc;
+      margin-bottom: 40px;
+    }
+
+    .data-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 25px;
+      background: rgba(255, 255, 255, 0.03);
+      padding: 25px;
+      border-radius: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .data-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+      padding-bottom: 10px;
+    }
+
+    .data-item span {
+      font-size: 12px;
+      color: #00aaff;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+
+    .data-item strong {
+      font-size: 18px;
+      font-weight: 400;
+    }
+
+    /* --- TOP BAR CONTROLS --- */
+    #top-bar {
+      position: absolute;
+      top: 40px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: flex;
+      gap: 15px;
+      z-index: 30;
+    }
+
+    .ui-btn {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: rgba(255, 255, 255, 0.7);
+      padding: 12px 30px;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 14px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 2px;
+      backdrop-filter: blur(8px);
+      cursor: pointer;
+      transition: all 0.4s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+    }
+
+    .ui-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: #fff;
+      color: white;
+      transform: scale(1.05);
+    }
+
+    #gamemode-btn.active {
+      background: rgba(0, 100, 255, 0.2);
+      border-color: #00aaff;
+      color: #00aaff;
+      box-shadow: 0 0 30px rgba(0, 170, 255, 0.4);
+    }
+
+    /* --- SEARCH BAR --- */
+    #search-container {
+      position: absolute;
+      bottom: 80px;
+      /* Moved up slightly to make room for footer */
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 30;
+      width: 300px;
+      text-align: center;
+    }
+
+    #search-input {
+      background: rgba(0, 0, 0, 0.6);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      color: white;
+      padding: 15px 25px;
+      border-radius: 50px;
+      font-family: inherit;
+      font-size: 16px;
+      width: 100%;
+      backdrop-filter: blur(8px);
+      outline: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.5);
+    }
+
+    #search-input::placeholder {
+      color: rgba(255, 255, 255, 0.5);
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 2px;
+    }
+
+    #search-input:focus {
+      background: rgba(0, 0, 0, 0.9);
+      border-color: #00aaff;
+      width: 120%;
+      transform: translateY(-5px);
+      box-shadow: 0 10px 30px rgba(0, 170, 255, 0.2);
+    }
+
+    /* --- SHIP SELECTION MODAL --- */
+    #ship-modal {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) scale(0.9);
+      background: rgba(10, 15, 30, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      padding: 40px;
+      border-radius: 20px;
+      z-index: 100;
+      display: none;
+      opacity: 0;
+      transition: all 0.3s ease;
+      text-align: center;
+      color: white;
+      box-shadow: 0 0 50px rgba(0, 0, 0, 0.8);
+      min-width: 500px;
+    }
+
+    #ship-modal.open {
+      display: block;
+      opacity: 1;
+      transform: translate(-50%, -50%) scale(1);
+    }
+
+    #ship-modal h2 {
+      margin-top: 0;
+      text-transform: uppercase;
+      letter-spacing: 4px;
+      color: #fff;
+      margin-bottom: 30px;
+    }
+
+    .ship-options {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+    }
+
+    .ship-card {
+      background: rgba(255, 255, 255, 0.05);
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      padding: 25px 15px;
+      border-radius: 15px;
+      cursor: pointer;
+      width: 140px;
+      transition: all 0.2s ease;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .ship-card:hover {
+      background: rgba(255, 255, 255, 0.15);
+      transform: translateY(-8px);
+    }
+
+    .ship-icon {
+      font-size: 40px;
+      margin-bottom: 15px;
+      display: block;
+      filter: drop-shadow(0 0 10px rgba(255, 255, 255, 0.3));
+    }
+
+    .ship-card.rocket:hover {
+      border-color: #ff4444;
+      box-shadow: 0 0 20px rgba(255, 68, 68, 0.4);
+    }
+
+    .ship-card.speeder:hover {
+      border-color: #00ffff;
+      box-shadow: 0 0 20px rgba(0, 255, 255, 0.4);
+    }
+
+    .ship-card.ufo:hover {
+      border-color: #00ff44;
+      box-shadow: 0 0 20px rgba(0, 255, 68, 0.4);
+    }
+
+    .ship-card h3 {
+      font-size: 14px;
+      text-transform: uppercase;
+      margin: 10px 0 5px 0;
+      letter-spacing: 1px;
+    }
+
+    .ship-card p {
+      font-size: 11px;
+      color: #aaa;
+      margin: 0;
+      line-height: 1.4;
+    }
+
+    /* --- NEW: FOOTER --- */
+    #footer {
+      position: absolute;
+      bottom: 10px;
+      width: 100%;
+      text-align: center;
+      color: rgba(255, 255, 255, 0.4);
+      font-size: 12px;
+      font-weight: 300;
+      letter-spacing: 1px;
+      pointer-events: none;
+      /* Let clicks pass through */
+      z-index: 5;
+      text-transform: uppercase;
+    }
+
+    #footer span {
+      color: #a020f0;
+      /* Violet Heart Color */
+      font-size: 14px;
+      margin: 0 2px;
+    }
+  </style>
+
+  <script type="importmap">
+      {
+        "imports": {
+          "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+          "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/",
+          "lil-gui": "https://unpkg.com/lil-gui@0.19.1/dist/lil-gui.esm.min.js"
+        }
+      }
+    </script>
+</head>
+
+<body>
+  <div id="tooltip"></div>
+
+  <div id="top-bar">
+    <button id="customize-btn" class="ui-btn">Select Craft</button>
+    <button id="gamemode-btn" class="ui-btn">Enter Spaceship</button>
+  </div>
+
+  <div id="ship-modal">
+    <h2>Hangar</h2>
+    <div class="ship-options">
+      <div class="ship-card rocket" onclick="window.selectShip(0)">
+        <span class="ship-icon">🚀</span>
+        <h3 style="color:#ff4444">Retro Rocket</h3>
+        <p>Speed: High<br>Handling: Sharp</p>
+      </div>
+
+      <div class="ship-card speeder" onclick="window.selectShip(1)">
+        <span class="ship-icon">🏎️</span>
+        <h3 style="color:#00ffff">Cyber Speeder</h3>
+        <p>Speed: Balanced<br>Handling: Smooth</p>
+      </div>
+
+      <div class="ship-card ufo" onclick="window.selectShip(2)">
+        <span class="ship-icon">🛸</span>
+        <h3 style="color:#00ff44">Alien Saucer</h3>
+        <p>Speed: Agile<br>Handling: Drifty</p>
+      </div>
+    </div>
+  </div>
+
+  <div id="search-container">
+    <input type="text" id="search-input" placeholder="Search Planet..." autocomplete="off">
+  </div>
+
+  <div id="info-panel">
+    <h1 id="planet-name">Planet</h1>
+    <p id="planet-desc">Description goes here...</p>
+    <div class="data-grid">
+      <div class="data-item">
+        <span>Temperature</span>
+        <strong id="planet-temp">0°C</strong>
+      </div>
+      <div class="data-item">
+        <span>Gravity</span>
+        <strong id="planet-gravity">9.8 m/s²</strong>
+      </div>
+      <div class="data-item">
+        <span>Mass</span>
+        <strong id="planet-mass">1.0 x</strong>
+      </div>
+    </div>
+  </div>
+
+  <div id="footer">
+    Built by Abdel <span>💜</span> &copy; 2025
+  </div>
+
+  <div id="scene-container"></div>
+
+  <script type="module" src="./src/main.js"></script>
+</body>
+
+</html>
