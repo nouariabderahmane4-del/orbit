@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 
-// Make sure your local server (e.g., live-server or http-server) is running on port 8080!
+// Make sure your local server (e.g., live-server or http-server) is running on port 8081!
 const LOCAL_URL = 'http://localhost:8081';
 
 test.describe('Orbit Solar System E2E Tests', () => {
