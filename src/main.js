@@ -5,7 +5,7 @@ import { InputManager } from './systems/InputManager.js';
 import { GuiManager } from './systems/GuiManager.js';
 import { StarField } from './entities/StarField.js';
 import { UIManager } from './systems/UIManager.js';
-import { Spaceship } from './entities/Spaceship.js';
+import { Spaceship } from './entities/spaceship.js';
 import * as THREE from 'three';
 import { CSS2DRenderer } from 'three/addons/renderers/CSS2DRenderer.js';
 

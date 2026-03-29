@@ -25,30 +25,27 @@ export class Planet {
     constructor(data, scene) {
         this.scene = scene;
         this.data = data;
-        this.moons = []; // Stores { mesh, pivot, speed, data, label, orbit }
+        this.moons = [];
         this.moonLabels = [];
 
-        // 1. Group Container
         this.mesh = new THREE.Group();
 
-        // 2. Load Texture
         const textureLoader = new THREE.TextureLoader();
         const texture = data.texture ? textureLoader.load(data.texture) : null;
         if (texture) texture.colorSpace = THREE.SRGBColorSpace;
 
-        // 3. Create Material
         let material;
         if (data.name === "Sun") {
+            // Sun uses basic material because it shouldn't have shadows on it
             material = new THREE.MeshBasicMaterial({ map: texture, color: data.color });
         } else {
+            // Changed from Basic to Standard material so the planets react to the Sun's light
+            // This creates the day/night terminator line
             material = new THREE.MeshStandardMaterial({
                 map: texture,
                 color: texture ? 0xffffff : data.color,
                 roughness: 0.8,
-                metalness: 0.1,
-                emissive: texture ? 0xffffff : data.color,
-                emissiveMap: texture || null,
-                emissiveIntensity: 0.1
+                metalness: 0.1
             });
         }
 
@@ -73,7 +70,7 @@ export class Planet {
             this.planetMesh.add(this.cloudMesh);
         }
 
-        // --- ATMOSPHER ---
+        // --- ATMOSPHERE ---
         if (data.atmosphere) {
             const atmosGeometry = new THREE.SphereGeometry(data.size * 1.2, 32, 32);
             const atmosMaterial = new THREE.ShaderMaterial({
@@ -110,8 +107,6 @@ export class Planet {
             this.planetMesh.rotation.z = 27 * (Math.PI / 180);
         }
 
-        // --- MOONS ---
-        // Initialize existing moons from data
         if (data.moons) {
             data.moons.forEach(moonData => {
                 this.createMoon(moonData);
@@ -123,11 +118,9 @@ export class Planet {
     }
 
     createMoon(moonData) {
-        // 1. Pivot (The center point the moon spins around)
         const moonPivot = new THREE.Object3D();
         this.planetMesh.add(moonPivot);
 
-        // 2. Mesh (The actual visual moon)
         const geometry = new THREE.SphereGeometry(moonData.size, 32, 32);
         const material = new THREE.MeshStandardMaterial({
             color: moonData.color,
@@ -137,23 +130,18 @@ export class Planet {
         moonMesh.position.x = moonData.distance;
         moonPivot.add(moonMesh);
 
-        // --- NEW: INVISIBLE HITBOX ---
-        // We make a sphere 2.5x bigger than the visual moon
         const hitGeo = new THREE.SphereGeometry(moonData.size * 2.5, 16, 16);
         const hitMat = new THREE.MeshBasicMaterial({
-            visible: false, // Not drawn...
+            visible: false,
             color: 0xff0000,
-            transparent: true, // ...but Raycaster still sees it if we use opacity 0? 
-            // actually, Three.js raycaster ignores visible:false. 
-            // We must use transparent:true, opacity:0 to let the ray hit it!
+            transparent: true,
             opacity: 0,
             depthWrite: false
         });
         const hitMesh = new THREE.Mesh(hitGeo, hitMat);
-        hitMesh.position.x = moonData.distance; // Same position as the moon
-        moonPivot.add(hitMesh); // Move with the moon
+        hitMesh.position.x = moonData.distance;
+        moonPivot.add(hitMesh);
 
-        // 3. Label
         const moonDiv = document.createElement('div');
         moonDiv.className = 'moon-label';
         moonDiv.textContent = moonData.name;
@@ -163,7 +151,6 @@ export class Planet {
         moonLabel.visible = false;
         this.moonLabels.push(moonLabel);
 
-        // 4. Orbit Line
         const orbitCurve = new THREE.EllipseCurve(0, 0, moonData.distance, moonData.distance, 0, 2 * Math.PI);
         const points = orbitCurve.getPoints(64);
         const orbitGeo = new THREE.BufferGeometry().setFromPoints(points);
@@ -172,10 +159,9 @@ export class Planet {
         orbitLine.rotation.x = -Math.PI / 2;
         this.planetMesh.add(orbitLine);
 
-        // 5. Save everything (Include HitMesh!)
         this.moons.push({
             mesh: moonMesh,
-            hitMesh: hitMesh, // <--- SAVE THIS
+            hitMesh: hitMesh,
             pivot: moonPivot,
             speed: moonData.speed,
             data: moonData,
@@ -189,29 +175,22 @@ export class Planet {
         if (index === -1) return;
 
         const moonObj = this.moons[index];
-
-        // 1. Remove 3D Objects
         this.planetMesh.remove(moonObj.pivot);
         this.planetMesh.remove(moonObj.orbit);
 
-        // NEW: Dispose of Hitbox memory
         moonObj.hitMesh.geometry.dispose();
         moonObj.hitMesh.material.dispose();
 
-        // 2. Clean up Labels
         const labelIndex = this.moonLabels.indexOf(moonObj.label);
         if (labelIndex > -1) this.moonLabels.splice(labelIndex, 1);
 
-        // 3. Clean up Data
         const dataIndex = this.data.moons.indexOf(moonData);
         if (dataIndex > -1) this.data.moons.splice(dataIndex, 1);
 
-        // 4. Remove from list
         this.moons.splice(index, 1);
     }
 
     createOrbitLine(radius) {
-        // 1. Draw the visual thin line
         const orbitShape = new THREE.EllipseCurve(0, 0, radius, radius, 0, 2 * Math.PI);
         const points = orbitShape.getPoints(128);
         const geometry = new THREE.BufferGeometry().setFromPoints(points);
@@ -224,23 +203,17 @@ export class Planet {
         orbitLine.rotation.x = -Math.PI / 2;
         this.scene.add(orbitLine);
 
-        // --- 2. Add Invisible Hitbox (Torus) ---
-        // Creates a thick invisible ring around the line to make mouse hovering easier
-        // radius: same as orbit radius
-        // tube: thickness of the hit area (e.g., 3 units)
         const hitGeo = new THREE.TorusGeometry(radius, 3, 16, 100);
         const hitMat = new THREE.MeshBasicMaterial({
-            visible: false,      // Not visible to the eye
-            transparent: true,   // Transparent for Raycaster
-            opacity: 0,          // Fully invisible
+            visible: false,
+            transparent: true,
+            opacity: 0,
             depthWrite: false
         });
 
         const hitMesh = new THREE.Mesh(hitGeo, hitMat);
-        hitMesh.rotation.x = -Math.PI / 2; // Lay flat to match the orbit line
+        hitMesh.rotation.x = -Math.PI / 2;
         this.scene.add(hitMesh);
-
-        // Save reference to clean up later
         this.orbitHitbox = hitMesh;
 
         return orbitLine;
@@ -255,15 +228,10 @@ export class Planet {
     }
 
     dispose() {
-        // Remove main planet group
         this.scene.remove(this.mesh);
-
-        // Remove visual orbit line
         if (this.orbitLine) {
             this.scene.remove(this.orbitLine);
         }
-
-        // Remove orbit hitbox and free memory
         if (this.orbitHitbox) {
             this.scene.remove(this.orbitHitbox);
             this.orbitHitbox.geometry.dispose();
