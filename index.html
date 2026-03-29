@@ -39,6 +39,14 @@
       border-radius: 12px;
       backdrop-filter: blur(12px);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+
+      /* --- SCROLLBAR FIX --- */
+      max-height: 80vh;
+      /* Limits height to 80% of the screen */
+      overflow-y: auto;
+      /* Enables vertical scrollbar */
+      overflow-x: hidden;
+      /* Prevents horizontal shifting */
     }
 
     .lil-gui .title {
