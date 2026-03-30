@@ -40,17 +40,40 @@
       backdrop-filter: blur(12px);
       box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
 
-      /* --- SCROLLBAR FIX --- */
+      /* Sidebar Scroll Fix */
       max-height: 80vh;
-      /* Limits height to 80% of the screen */
       overflow-y: auto;
-      /* Enables vertical scrollbar */
       overflow-x: hidden;
-      /* Prevents horizontal shifting */
     }
 
+    .lil-gui.root::-webkit-scrollbar {
+      width: 4px;
+    }
+
+    .lil-gui.root::-webkit-scrollbar-track {
+      background: transparent;
+    }
+
+    .lil-gui.root::-webkit-scrollbar-thumb {
+      background: rgba(0, 170, 255, 0.5);
+      border-radius: 10px;
+    }
+
+    /* --- THE FIX: SPACE BETWEEN NAME AND NEXT ROW --- */
     .lil-gui .title {
       border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+
+      white-space: normal !important;
+      word-wrap: break-word !important;
+      word-break: break-all !important;
+
+      /* This allows the box to stretch vertically so it doesn't overlap 'Size' */
+      height: auto !important;
+
+      /* This adds the actual space between the name and the contents below it */
+      padding-top: 8px !important;
+      padding-bottom: 10px !important;
+      line-height: 1.4 !important;
     }
 
     /* --- UI ELEMENTS --- */
@@ -66,7 +89,9 @@
       top: 0;
       left: 0;
       border: 1px solid rgba(255, 255, 255, 0.3);
-      white-space: nowrap;
+      white-space: normal;
+      word-break: break-all;
+      max-width: 250px;
       z-index: 10;
     }
 
@@ -76,7 +101,6 @@
       padding: 2px 5px;
       border-radius: 3px;
       font-size: 10px;
-      /* Small font size for moons */
       text-shadow: 0 0 4px #000;
       pointer-events: none;
     }
@@ -98,6 +122,7 @@
       display: flex;
       flex-direction: column;
       z-index: 20;
+      overflow-y: auto;
     }
 
     #info-panel.active {
@@ -113,6 +138,8 @@
       text-transform: uppercase;
       letter-spacing: 4px;
       font-weight: 300;
+      word-break: break-all;
+      line-height: 1.2;
     }
 
     #info-panel p {
@@ -198,7 +225,6 @@
     #search-container {
       position: absolute;
       bottom: 80px;
-      /* Moved up slightly to make room for footer */
       left: 50%;
       transform: translateX(-50%);
       z-index: 30;
@@ -329,7 +355,6 @@
       line-height: 1.4;
     }
 
-    /* --- NEW: FOOTER --- */
     #footer {
       position: absolute;
       bottom: 10px;
@@ -340,14 +365,12 @@
       font-weight: 300;
       letter-spacing: 1px;
       pointer-events: none;
-      /* Let clicks pass through */
       z-index: 5;
       text-transform: uppercase;
     }
 
     #footer span {
       color: #a020f0;
-      /* Violet Heart Color */
       font-size: 14px;
       margin: 0 2px;
     }
